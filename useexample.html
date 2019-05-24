@@ -59,7 +59,8 @@
 
 <h1 id="exampleABINIT">Example on ABINIT -- Ti256 dataset</h1>
 
-This chapter presents how to transform an industrial open source code: ABINIT; which have been chosen, with the test case “Ti-256” due to results we obtained with very little efforts. 
+Here we present how to transform an industrial open source code: ABINIT; which have been chosen, with the test case “Ti-256” due to results we obtained with very little efforts. 
+All sources codes and makefile can be found <a href="codes/abinit/">here</a>.
 ABINIT is a software suite to calculate the optical, mechanical, vibrational, and other observable properties of materials.
 Thanks to some tools we detected that all the compute part is perform in the file opernlb_ylm.F90 and some variables are always used with the same value. 
 So we decided to specialize the hotspot function and set values of these variables.
