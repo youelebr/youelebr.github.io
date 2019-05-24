@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+
+<!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>ASSIST a MAQAO module | ASSIST</title>
+<meta name="generator" content="Jekyll v3.7.4" />
+<meta property="og:title" content="ASSIST page" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Automatic Source-to-Source assISTant" />
+<meta property="og:description" content="Automatic Source-to-Source assISTant" />
+<link rel="canonical" href="https://youelebr.github.io/index.html" />
+<meta property="og:url" content="https://youelebr.github.io/index.html" />
+<meta property="og:site_name" content="ASSIST" />
+<script type="application/ld+json">
+{"headline":"ASSIST","@type":"WebPage","url":"https://youelebr.github.io/index.html","description":"Automatic Source-to-Source assISTant","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#157878">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">ASSIST</h1>
+      <h2 class="project-tagline">Automatic Source-to-Source assISTant</h2>
+      
+        <a href="https://github.com/youelebr" class="btn">View on GitHub</a>
+      
+      
+    </section>
+
+     <section class="main-content">
+      <hr />
+<p><a href="/index.html">Home</a> - 
+<a href="dissemination.html">Dissemination</a> - 
+<a href="gettingstarted.html">Getting Started</a> -
+<!--<a href="documentation.html">Documentation</a> - -->
+<a href="tutorials.html">Tutorials</a> -
+<a href="https://maqaoteam.github.io/MAQAO/">MAQAO</a> -
+<a href="https://maqaoteam.github.io/MAQAO/team.html">MAQAO Team</a> </p>
+
+<hr />
+<!--
+<h1 id="outline">Outline</h1>
+
+<p><a href="#requirement">1. Requirement</a> <br />
+<a href="#installation">2. Installation</a> <br />
+<a href="#howtouseassist">3. How to use ASSIST</a> <br />
+<a href="#annotatedsourcefile">3.1 With an annotated source file</a> <br />
+<a href="#configurationfile">3.2 With a configuration file</a> <br />
+<a href="#profilerres">3.3 With profilers results</a> <br />
+<a href="#assisthelp">4. ASSIST Help</a><br/>
+<a href="#configfile">5. Configuration File</a> <br />
+<a href="#transformations">6. Transformations</a> <br />
+</p>
+-->
+
+<h1 id="exampleABINIT">Example on ABINIT -- Ti256 dataset</h1>
+
+This chapter presents how to transform an industrial open source code: ABINIT; which have been chosen, with the test case “Ti-256” due to results we obtained with very little efforts. 
+ABINIT is a software suite to calculate the optical, mechanical, vibrational, and other observable properties of materials.
+Thanks to some tools we detected that all the compute part is perform in the file opernlb_ylm.F90 and some variables are always used with the same value. 
+So we decided to specialize the hotspot function and set values of these variables.
+Before to start, we had to generate all RMOD files needed to correctly handle of Fortran file. 
+A RMOD file is a representation of a Fortran module with only declarations of functions and variables contained in the module needed by Rose to handle the use of modules. To generate all RMOD file of a directory with one command, you had to launch the following command from the root of sources:
+<br/>
+<code>$maqao s2s –generateAllRMOD=.</code>
+<br/>
+This command has the effect of creating RMOD files of all Fortran modules in the current folder and in all subfolders. 
+The dot can be replace by a path to all modules. RMOD files will be create in he same folder as the corresponding module. 
+Rose manage badly defines, if you have some, you have to way to handle them; first, you can preprocess the file with the option “-cpp” of most of compiler, or replace directly the define by its value. 
+For ou example we had to correct this Rose's shortcomings by modifying one RMOD file (“m_xmpi.rmod”) by replacing the macro: "ABI_PROTECTED” with its equivalent: “, protected” and the file opernlb_ylm.F90 by preprocessing it.
+The second step is adding directives to specialize the function and tiling an heavy loop. 
+Then the following command will apply transformations according to directives in the opernlb_ylm file, we indicate where are folder and subfolders containing RMOD files with the option “-I”.
+
+<pre>
+	!DIR$ MAQAO SPECIALIZE(choice=1, paw_opt=3, cplex=2)
+	!DIR$ MAQAO SPECIALIZE(choice=1, paw_opt&lt;3, cplex=2)
+	!DIR$ MAQAO SPECIALIZE(choice=1, paw_opt&gt;3, cplex=2)
+	subroutine opernlb_ylm (...)
+	...
+	!DIR$ MAQAO TILE_IF_SPE_choicee1=8
+	do k=1,npw
+		ztab(k)=ztab(k)+ffnl(k,1,ilmn)*cmplx(gxfacs_(1,ilmn),gxfacs_(2,ilmn),kind=dp)
+	end do
+</pre>
+<br/>
+<code>$maqao s2s –src=opernlb_ylm.F90 –option=”apply_directives” –I=/home/test/abinit/src/ </code>
+<br/>
+Which will create a maqao_opernlb_ylm.F90 with three versions of the function “opernlb_ylm” where variables “choice” is set to 1, “cplex” is set to 2 and among these versions, one has “paw_opt” set to 3 and the others take into account that it is strictly less than or greater than 3; and in each version where choice is set to 1, the loop with the MAQAO directive is tiled by 8. 
+If we replace the file opernlb_ylm.F90 by this new one generate by ASSIST and re-launch the makefile it will compile and be optimize for the dataset “Ti-256”.
+For more information and results, look at the paper of ASSIST: “ASSIST: a feedback-directed optimization source to source transformation tool for HPC applications”.
+
+<br/>
+<br/>
+
+  </body>
+</html>

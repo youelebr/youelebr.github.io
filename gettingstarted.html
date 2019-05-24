@@ -54,6 +54,12 @@
 <a href="#assisthelp">4. ASSIST Help</a><br/>
 <a href="#configfile">5. Configuration File</a> <br />
 <a href="#transformations">6. Transformations</a> <br />
+<a href="#mixtrans">7.  How to mix transformations</a> <br />
+<a href="#example">8. Example</a> <br />
+<a href="#limitations"> 9. Caveats &and; Limitations</a> <br />
+<a href="#transformations">6. Transformations</a> <br />
+<a href="#faq">6. 10. FAQ</a> <br />
+
 </p>
 
 <h1 id="Getting Started">Getting Started</h1>
@@ -382,7 +388,7 @@ The directive for this transformation is: <code>!DIR$ MAQAO TILE_INNER=N</code>,
 <br/>
 
 <h4 id=translct>6.1.4 Loop Count</h4>
-The loop count transformation consists in informing the compiler of the iterations to be expected for a loop by using a directive: loop count (min, max, avg). 
+<p>The loop count transformation consists in informing the compiler of the iterations to be expected for a loop by using a directive: loop count (min, max, avg). 
 This is important given that many loops have bounds that are set with variables and only known to the compiler at runtime. 
 The compiler attempts to determine the number of iterations for a loop and the work within that loop to determine if vectorizing the loop is "profitable". 
 This information can be exploited by Intel compilers; by default the compiler will generate multiple variants (e.g. scalar, SSE, AVX, etc.) of the same source loop at the binary level, with the loop count directive it will generate much less variants. 
@@ -391,11 +397,11 @@ This transformation uses results from a dynamic analysis of the MAQAO values pro
 This module can, among other things, count the minimal, maximal and average number of iteration of a loop. 
 From the VPROF’s output (a csv file), ASSIST can automatically add to all hotspots analyzed by VPROF the loop count directive. 
 This feedback directed optimization avoids a time consuming and prone-error task and in general achieve good results.
-
+</p>
 <h4>6.1.5  Short Vectorization </h4>
-We noticed in some occasions that even when the loop bound was hard-coded the compiler would not vectorize properly that loop. 
+<p>We noticed in some occasions that even when the loop bound was hard-coded the compiler would not vectorize properly that loop. 
 We can check such cases thanks the MAQAO module CQA which provides us with vectorization metrics. 
-This transformation performs the following steps on a given loop:
+This transformation performs the following steps on a given loop:</p>
 <ul>
 <li> Force the compiler to vectorize the loop using SIMD directive</li>
 <li> Prevent generating peeling code using vector unaligned directive</li>
@@ -443,8 +449,8 @@ This transformation performs the following steps on a given loop:
 <br/>
 
 <h4>6.1.6  Generic Short Vectorization </h4>
-Short Vectorization can be applying even if the loop bounds are not known. 
-This generic version check rest of the modulo of the loop’s bound and apply the block vectorization on each generated version.
+<p>Short Vectorization can be applying even if the loop bounds are not known. 
+This generic version check rest of the modulo of the loop’s bound and apply the block vectorization on each generated version.</p>
 <div id="sides">
   <div id=left>
     <pre>
@@ -534,11 +540,11 @@ This generic version check rest of the modulo of the loop’s bound and apply th
 </div>
 
 <h3 id=transfunc>6.2 Functions</h3>
-This section shows all transformations available for functions and how to procced to apply each one
-with directives.
+<p>This section shows all transformations available for functions and how to procced to apply each one
+with directives.</p>
 
 <h4>6.2.1 Partial Dead Code Elimination </h4>
-The dead code elimination works as follow: 
+<p>The dead code elimination works as follow: 
 In our detection algorithm, we search if conditions are always (/never) true or false. 
 Currently, it is only available with Integers or for some cases with variables. 
 If a variable is in the expression to evaluate, we are looking for the last assignment of this variable. 
@@ -548,6 +554,7 @@ The first was on statement (1): its conditional will always be false and only th
 A second elimination was applied, on statement (2): we can observe that the loop “do j=k, 99,1” will never be execute due to k’s value (100). 
 Therefore, we delete the statement which makes the loop above empty, which leads to its deletion making the “true” body of the “if” statement empty. 
 To avoid to have empty body we invert the conditional with a NOT and move the “else” body into the “if” body.
+</p>
 <div id="sides">
   <div id=left>
     <pre>
@@ -616,16 +623,95 @@ To avoid to have empty body we invert the conditional with a NOT and move the �
   Example of the partial dead code elimination transformation
 </div>
 <br/>
-Actuals compilers do the same work and more, but this transformation is the first of a series of optimizations working on functions like the function specialization.
+<p>Actuals compilers do the same work and more, but this transformation is the first of a series of optimizations working on functions like the function specialization.</p>
 
-<h3 id=transfuncspe>6.2.2 Function Specialization</h3>
-For a specific run it is possible than a function will always be called with an idempotent parameter, or if the user know bounds of a parameter (also available for a variable in the body of the function), so this transformation create a copy of the function removing all dead code implies by the information in the directive. 
-There is a variant of this directive where the “if then CALL func_spe else...” was not create, the directive for that is: !DIR$ MAQAO SPECIALIZE_WITHOUT_CALL(<info>).
+<h4 id=transfuncspe>6.2.2 Function Specialization</h4>
+<p>For a specific run it is possible than a function will always be called with an idempotent parameter, or if the user know bounds of a parameter (also available for a variable in the body of the function), so this transformation create a copy of the function removing all dead code implies by the information in the directive. 
+There is a variant of this directive where the “if then CALL func_spe else...” was not create, the directive for that is: <code>!DIR$ MAQAO SPECIALIZE_WITHOUT_CALL(&lt;info&gt;)</code>.
 The figure 6 and7 show the specialization function, before and after transformation. 
 The loop (1) was remove because the condition of the “if” statement (2) was detected as always false and therefore the loop become empty. 
 The same applies for the “if” statement (3), the user indicate than the variable “k” will be less or equals to10, the “else” (4) part will always the chosen path, so the “if” statement was replaced by the else body. 
 As show on figure 6, the user can give multiple indications about a variable. 
-The user can seta value to the variable by the operator “=”; he can also give bounds, with operators “<”, “>”, the value will not be including; finally he can indicate a set of value with operator “={val1,val2}”, in this case the variable values can only be between “val1” and “val2” including.
+The user can seta value to the variable by the operator “=”; he can also give bounds, with operators “&lt;”, “&gt;”, the value will not be including; finally he can indicate a set of value with operator “={val1,val2}”, in this case the variable values can only be between “val1” and “val2” including.
+</p>
+<div id="sides">
+  <div id=left>
+    <pre>
+      Before:
+        !DIR$ MAQAO SPECIALIZE(x=4, k={0,10})
+        Subroutine func (x, k, a)
+          integer, intent(in) :: x, k
+          Real, dimension(1), intent(inout) :: a
+          ...
+          do i = 1, x!(2)
+            if x &gt; 4 then!(1)
+              a[i] = 0
+            endif
+          enddo
+          if k &gt; 10 then !(3)
+            do i = 1, 1000, 1
+              do j =1, 1000, 1
+                CALL intensiveCalcul(a,i,j)
+              enddo
+            enddo
+          else!(4)
+            CALL smallCalcul(a,i,j)
+          endif
+          ...
+          return
+        end subroutine
+
+    </pre>
+  </div>
+  <div id=right>
+    <pre>
+    After:
+      subroutinefunc (x, k, a)
+        integer, intent(in) :: x, k
+        real, dimension(2), intent(inout) :: a
+        if x .EQ. 4 .AND. k &gt;-1 .AND. k &lt;11 then
+        CALL func_xe4_kbl20(k,a)
+        else
+          &lt;original body&gt;
+        ...
+      end subroutine
+      subroutine func_xe4_kb010(k, a)
+        integer, intent(in) :: k
+        real, dimension(2), intent(inout) :: a
+        ...
+        CALL smallCalcul(a,i,j)
+        ...
+        return
+      end subroutine
+
+
+
+
+
+
+    </pre>
+  </div>
+  Example of function specialization and dead code elimination.
+</div>
+<br/>
+
+<h2 id=mixtrans>7.  How to mix transformations </h2>
+Some transformations can be coupled to increase the scope of possibilities. Currently, only
+the specialization can be coupled with other transformations, but in the future, we may add the
+possibility of coupling other transformations. To apply a transformation on a specialized version the
+directive has to start by “IF_SPE_” followed by a string composed of the variable name, a letter
+representing the comparator: “e” for “ =”; s for “>”; “I” for “<”; “b” for “{ , }”, and the value. This
+sequence is the same as how specialized function name are build.
+<div id="sides">
+  <div id=left>
+    <pre>
+      Before:
+      !DIR$ MAQAO SPECIALIZE(x=8)
+      !DIR$ MAQAO SPECIALIZE(k=1)
+      !DIR$ MAQAO IF_SPE_xe8_UNROLL=4
+      do i = 1, x
+        a[i] = b[i] + c[i] + k
+      enddo
 
 
 
@@ -633,5 +719,118 @@ The user can seta value to the variable by the operator “=”; he can also giv
 
 
 
+
+
+
+
+
+    </pre>
+  </div>
+  <div id=right>
+    <pre>
+    After:
+      if ( x .eq. 8) then
+        do i = 1, 8, 4
+          a[i] = b[i] + c[i]
+          a[i+1] = b[i+1] + c[i+1]
+          a[i+2] = b[i+2] + c[i+2]
+          a[i+3] = b[i+3] + c[i+3]
+        end do
+      else
+        if (k .eq. 1) then
+          do i = 1, x
+            a[i] = b[i] + c[i] + 1
+          end do
+        else
+          do i = 1, x
+            a[j] = b[i] + c[j]
+          end do
+        end if
+      end if
+    </pre>
+  </div>
+  Example of specialization coupled with the unroll transformation
+</div>
+<br/>
+As we can see, the loop has been specialized two times; one with x equals to 8 and the second with k
+equals to 1. The unroll transformation has been only applied on the specialized version with x equals
+to 8.
+
+<br/>
+<br/>
+<h2 id=example>8. Example</h2>
+Now we know everythings about ASSIST, let's get a look on a <a href="useexample.html">use case example</a> with ABINIT on the Ti-256 dataset.
+<br/>
+<br/>
+<h2 id=limitations> 9. Caveats &and; Limitations</h2>
+Some limitations have been presented in the previous section and what we did to improve them but Rose being a research project and ASSIST being a prototype, there is still room for improvements. 
+This chapter will list most of these caveats and limitations.
+
+<h3>9.1 Fortran Intrinsic modules</h3>
+Fortran has some specials intrinsic modules (e.g. ISO_FORTRAN_ENV, OMP_LIB,
+OMP_LIB_KINDS, ISO_C_BINDING, IEEE_EXCEPTIONS, IEEE_ARITHMETIC, IEEE_FEATURES) which are
+not handle by Rose.
+
+<h3>9.2 Preprocessor</h3>
+First, we will talk about preprocessors directives. We must differentiate two cases: the first
+one is for preprocessor statement in Fortran; they are not well managed by Rose. The Fortran
+Frontend in Rose is a not well-tested frontend and it is not intended to take account directives type
+C. As see in the example, files have to be preprocessed before transformations.
+The second case is for C/C++; Rose was designed as a compiler so it needs to know if the body of a
+“#ifdef” statement will be use (or not). If we analyze the body of the “#ifdef” statement, we will not
+analyze the “#else” part (and vice versa). We worked to restore all the elements of each part of the
+directive in the output file, but the user will be able to modify only one part at time.
+
+<h3>9.3 Languages</h3>
+The Rose frontend is the OpenFortranParser, a Java parser for Fortran. We modified many
+things in Rose to better handle Fortran statements, but we did not add the management of all
+keywords and new statements available in Fortran2008 du to the amount of work that is involved.
+The file to transform has to be included between Fortran77 and Fortran2003. We have the same kind
+of problem in C++, Rose’s frontend only handle C++ up to C++03.
+
+<h2 id=faq>10. F.A.Q </h2>
+During the execution of ASSIST, the source file that you want to transform can generate some
+errors, in fact, the Rose Project has not well tested for Fortran, we modified it as we can to handle a
+maximum of cases, but it’s possible we forgot some of them.
+This section tries to help you with classical errors.
+<ul>
+  <li>What if my code generates a message and crash: “File rmodFileName = &lt;module&gt;.rmod
+NOT FOUND (expected to be present) error: No declaration found for the module:
+&lt;modulename&gt;” ?</li>
+ 
+You probably not generate the rmod file which corresponding to the module you want to use.
+Use the option presented previously in the document: “-generateAllRMOD=<path_to_src>” or
+you can generate a RMOD file from a unique source file with the next command:
+$maqao s2s -option=”generateRMOD” -src=<path_to_file>
+The first one will generate a RMOD file by module contains in your folder, and the second will do
+the same but for one file.
+
+<li>  I created rmod files but a message report that it does not find it ?</li>
+
+Please use the “-I” option during the call of the maqao module:
+$maqao s2s -I=&lt;path_to_rmod_files_and_includes&gt;,&lt;second_path&gt;,...
+
+<li>What can I do something goes wrong in another file that I am transforming ?</li>
+
+If a message indicate something goes wrong in another file, please check the RMOD file and remove or comment the bug part (if it not impact your file).
+You have to know that Rose was designed for gcc4.4 (and gfortran4.4) and it's possible to not known some new rules. 
+If you do not be able to modify the rmod file or if it's not enough please contact us.
+If your file contain some C++11 statement, we cannot handle it because of the Rose C++ frontends.
+
+<li>  Why my file cannot be transformed ? </li>
+
+If your Fortran file return you a error message, before anything please check if your file has not .f08 as extension (not able yet). 
+Then check if the extension do not contain any maj like .F90 (we do not really known why but we work on it), in this case transform the extension file into .f90.
+Finally, if it is Fortran2008, checks if it not contains any fortran2008 feature (as the “contiguous” keyword, for example) and rename the extension as .f03.
+
+<li> I want to transform c files but it does not find standard headers? </li>
+It is possible that Rose did not find standard headers. Please use the “-I” option during the call of
+the MAQAO module to gcc/g++ headers (path can be found by locating the file “stddef.h”) as the
+follow example:
+<code>$maqao s2s -I=/usr/lib/gcc/x86_64-linux-gnu/4.4/include/</code>
+</ul>
+<br/>
+<br/>
+<br/>
   </body>
 </html>
