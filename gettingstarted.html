@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+
+<!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>ASSIST a MAQAO module | ASSIST</title>
+<meta name="generator" content="Jekyll v3.7.4" />
+<meta property="og:title" content="ASSIST page" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Automatic Source-to-Source assISTant" />
+<meta property="og:description" content="Automatic Source-to-Source assISTant" />
+<link rel="canonical" href="https://youelebr.github.io/index.html" />
+<meta property="og:url" content="https://youelebr.github.io/index.html" />
+<meta property="og:site_name" content="ASSIST" />
+<script type="application/ld+json">
+{"headline":"ASSIST","@type":"WebPage","url":"https://youelebr.github.io/index.html","description":"Automatic Source-to-Source assISTant","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#157878">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">ASSIST</h1>
+      <h2 class="project-tagline">Automatic Source-to-Source assISTant</h2>
+      
+        <a href="https://github.com/youelebr" class="btn">View on GitHub</a>
+      
+      
+    </section>
+
+     <section class="main-content">
+      <hr />
+<p><a href="/index.html">Home</a> - 
+<a href="dissemination.html">Dissemination</a> - 
+<a href="gettingstarted.html">Getting Started</a> -
+<!--<a href="documentation.html">Documentation</a> - -->
+<a href="tutorials.html">Tutorials</a> -
+<a href="https://maqaoteam.github.io/MAQAO/">MAQAO</a> -
+<a href="https://maqaoteam.github.io/MAQAO/team.html">MAQAO Team</a> </p>
+
+<hr />
+
+<h1 id="outline">Outline</h1>
+
+<p><a href="#requirement">1. Requirement</a> <br />
+<a href="#installation">2. Installation</a> <br />
+<a href="#howtouseassist">3. How to use ASSIST</a> <br />
+<a href="#annotatedsourcefile">3.1 With an annotated source file</a> <br />
+<a href="#configurationfile">3.2 With a configuration file</a> <br />
+<a href="#profilerres">3.3 With profilers results</a> <br />
+<a href="#assisthelp">4. ASSIST Help</a><br/>
+<a href="#configfile">5. Configuration File</a> <br />
+<a href="#transformations">6. Transformations</a> <br />
+</p>
+
+<h1 id="Getting Started">Getting Started</h1>
+
+<h2 id=requirement>1. Requirement</h2>
+  <p> Before you begin to use ASSIST, review the requirements given below. This may save you some
+  trouble by knowing ahead of time what hardware and software you will need.
+  Using ASSIST requires that you have some software packages installed and libraries. The list below
+  show those required packages and libraries. Packages are usual names for the software package that
+  ASSIST depends on. </p>
+  <ul>
+    <li>  Openjdk-6-jdk: version 6 or higher (not tested with older versions). Then you have to add the path to the libjvm.so in your LD_LIBRARY_PATH. </li>
+    <li> All others libraries needed are available in the git at: git.maqao.org:S2S/LIBS.git </li>
+  </ul>
+
+<h2 id=installation>2. Installation </h2>
+  <p> You can get ASSIST into two ways. First, download the binary containing MAQAO, ASSIST and all
+  libraries require: </p>
+  <div class="boxed">
+  $git clone git@git.maqao.org:S2S/RELEASE.git
+  </div>
+  <p>You will get a binary and libraries, please add the folder and libraries folder in your
+  LD_LIBRARY_PATH to be able to launch the “maqao” binary with the ASSIST module.
+  Second, download ASSIST sources: </p>
+  <div class="boxed">
+  $git clone git@git.maqao.org:S2S/S2S.git
+  </div>
+  <p> Several libraries are required, which can be found here: </p>
+
+  <div class="boxed">
+  $git clone git@git.maqao.org:S2S/LIBS.git
+  </div>
+  <p> Sources have to be added as a MAQAO plugin which can be download here: </p>
+
+  <div class="boxed">
+  $git clone git@git.maqao.org:MAQAO.git
+  </div>
+
+  <p> Finally, it remains only to compile MAQAO by running the following commands from the root of the
+  directory: </p>
+
+  <div class="boxed">
+  $ mkdir build <br />
+  $ cd build    <br />
+  $ cmake ..    <br />
+  $ make –j     <br />
+  </div>
+
+<h2 id=howtouseassist> 3. How to use ASSIST </h2>
+<p> In this section, it will be describe how to use the ASSIST as a MAQAO module, by giving an example and a description of different existing commands. </p>
+<h3 id=annotatedsourcefile> 3.1 With annotated source file </h3>
+  <p> First, applying transformations according to directives added by the user on a source file. </p>
+
+  <code>$maqao s2s –option=”apply-directives” -src=&lt;path to file&gt;[,&lt;path to file2&gt;,...]</code>
+
+  <p> In this case, user wants to apply all transformations according to custom directives contain in the
+  source file. The option “-src” can be feed with multiple files separated by a coma. If the file to analyze
+  require include files, the option “-I” take a list of paths separated by a coma. </p>
+
+  <code>$maqao s2s –option=”apply-directives” -src=&lt;path to file&gt; -I=&lt;path to includes&gt;</code>
+
+<h3 id=configurationfile> 3.2 With a configuration file  </h3>
+  <p> Directives are not the only way to apply transformations. If a user doesn’t want to add directives
+  in codes or want to apply different transformations according to the architecture, he can use a
+  transformation script. A template of this file can be obtained as follow: </p>
+
+  <code>$maqao s2s –generate-descriptor</code>
+
+  <p> To fill this file, you should look first the documentation about it. After completing all fields, you
+  can run the following command to apply transformations: </p>  
+
+  <code>$maqao s2s -config=&lt;path to the descriptor file&gt;</code>
+
+  <p> The transformation Script will be developed in a following section. </p>
+
+<h3 id=profilerres> 3.3 With profilers results </h3> 
+  <p> VPROF is a MAQAO module which performs a value profiling. The next command allow to apply
+  the loop count transformation using VPROF’s results contains in the “res.csv” file. To use VPROF’s
+  results, the user must use the “-bin” option with the binary use for the VPROF analyze. If a file cannot
+  be analyzing, the user can exclude this one with the option “–E”. </p>
+
+  <code>$maqao s2s –bin=&lt;binary&gt; -vprof_xp=&lt;res.csv&gt; -E=&lt;file to exclude&gt;[,&lt;file2&gt;,...]</code>
+
+  <p> An alternative to use VPROF’s results without to indicate the binary is to use the results file
+  return by ONEVIEW. ONEVIEW is also a MAQAO module which can launch different MAQAO modules
+  automatically. To obtain VPROF results you have to use the report two of ONEVIEW and add the
+  option “--assist”, it will create an “assist.lua” file. </p>
+
+  <code>$maqao s2s -oneview=&lt;assist.lua&gt;</code>
+
+  <p> Another MAQAO’s module is CQA, a static analyzer which can return, along with other metrics,
+  the vectorization ratio of a target basic block. </p>
+
+  <code>$maqao s2s –cqa_xp=&lt;res.csv&gt;</code>
+
+  <p> In addition of metrics, information in the CSV file return by CQA already contains where are
+  source files and loops to handle, so it’s not useful to add the “-src=” option. This command will
+  automatically apply the block vectorization on loops with a poor vectorization ratio (see section 3.1.5
+  to more information about the block vectorization). </p>
+
+<h2 id=assisthelp> 4. ASSIST Help </h2>
+<!-- <p> As see in the previous section our tool can get multiple options. -->
+<pre>
+$maqao s2s --help
+ In this section, we will describe all options, but you can found theses information in the help of the module. </p>
+  <text-bold>-src=&lt;path_to_file/file&gt;</text-bold>        Select the file to transform. <br />
+  <text-bold>-bin=&lt;path_to_bin/bin&gt;</text-bold>          Select bin to analyze and apply options on source files which were used to compile the bin. (Be careful, the path to files is 
+                                  the one use to compile the binary, so if you compile the binary on another computer you risk not having the same path, 
+                                  please recompile again, and be sure to have access to source files).  <br />
+  <text-bold>-vprof_xp=&lt;path to VPROF csv&gt;</text-bold>   Select a csv file, generated by VPROF, to launch automatically the loop count transformation.  <br />
+  <text-bold>-cqa_xp=&lt;path to cqa csv&gt;</text-bold>       Select a csv file, generated by CQA, to launch automatically the block vectorization. <br />
+  <text-bold>-oneview=&lt;oneview file&gt;</text-bold>         Select a file, generated by ONEVIEW, to launch automatically the loop count transformation. <br />
+  <text-bold>-I=&lt;directory1&gt;[,&lt;directory2&gt;,...]</text-bold>  List of directories containing files to include separated by a coma, no space. All sub-directories are also 
+                                      included. <br />
+  <text-bold>-E=&lt;file1&gt;[,&lt;file2&gt;,...]</text-bold>        List of file to exclude separated them by a coma, no space. <br />
+  <text-bold>-generate-descriptor</text-bold>            Generate a configuration file template.  <br />
+  <text-bold>-config=&lt;path_to_file/file&gt;</text-bold>     Select the configuration file containing all information to apply transformations on a file.  <br />
+  <text-bold>-replace[=&lt;new name&gt;]</text-bold>           By default, the output file name will be the same as the input one. If a path is given, the file will be move to this new 
+                                  location. <br />
+  <text-bold>-generateAllRMOD=&lt;directory&gt;</text-bold>    Extract all modules of Fortran files in a directory and its sub directories and create rmod files. 
+                                  Which represent the module contains in each file (if existing): &lt;modulename&gt;.rmod. <br />
+  <text-bold>-removeAllRMOD=&lt;directory&gt;</text-bold>      Remove all rmod files in a directory and its sub directories. <br />
+  <text-bold>-f2008  </text-bold>                        Allows to handle fortran08 files by commenting all Fortran2008 features if frame by "#ifdef F2008 ... #endif" of the input file 
+                                  and uncomment them in the output.<br />
+  <text-bold>-handle_macro </text-bold>                  Improve the management of C/C++ macro. <br />
+  <text-bold>-option=&lt;options&gt;</text-bold>  Available values are:
+     <text-bold>- "apply-directives"</text-bold>:        Search all MAQAO directives in files and apply transformations associated.
+     <text-bold>- "vprofcalltrans"</text-bold>:          Add a call to the vprof lib at the beginning of each function on all integer parameter.
+     <text-bold>- "generateRMOD"</text-bold>:            Extract all modules from a directory and sub directories and create a rmod file which represent the module : &lt;modulename>.rmod.
+     <text-bold>- "generatePDF"</text-bold>:             Generate a PDF file which represent all nodes with their internal information.
+     <text-bold>- "generateDOT"</text-bold>:             Generate a .dot file which can be transformed with Graviz.
+</pre>
+
+<h2 id=configfile> 5. Configuration File </h2> 
+ASSIST can take as input a configuration file which contains all information to transform a specific file; it is
+composed as follow:
+
+<pre>
+File=”&lt;path/to/the/src/file&gt;”
+Arch= {
+  All = {
+    Loops = {
+      {line = &lt;line&gt;, transformation = {“&lt;trans&gt;”}},
+      {line = &lt;line&gt;, transformation = {“&lt;othertrans&gt;”}},
+      {label = ”&lt;label&gt;”, transformation = {“&lt;trans&gt;”}
+    }
+    Functions = {
+      {line = <line>, transformation={“<trans1>”,”<trans2>”,...},
+      ...
+    }
+  x86 = {
+    ...
+  }
+}
+</pre>
+<ul>
+  <li>“File” contains the complete path to the file or at least the path from where you execute ASSIST to the file.</li>
+  <li>“Arch” contains all architecture you want to handle. You can name all arch field as you want, you just have to call with the option “—arch=&lt;archName&gt;” to apply transformation contains in the field of your defined arch. By default “All” will be call, therefore, it is advisable to have it defined.</li>
+  <li>In all architectures we can find two fields: “Loops” and “Functions”, which respectively represent all loops and functions in the file.
+  They will be defined by their line (or a label) and transformations to apply. If they are multiple transformations to apply it is possible to separate them by a coma. Transformations will be applied in the order, from left to right. Each statement to handle can be located by to ways. 
+  First, their line, it is corresponding to the line where the statement begins. Second, it is possible to add a label above the statement to locate it. 
+  This label must be defines as a directive (or pragmas according to the language used) and look like:
+<code>!DIR$ MAQAO &lt;label&gt;</code> or <code>#pragma MAQAO &lt;label&gt;</code>. &lt;label&gt; must be a string and must correspond exactly to the label in the configuration file, no substring is allowed.
+&lt;trans&gt; is a string which represent the transformation to apply. Available values are the same as for directives: <code>!DIR$(/#pragma) MAQAO &lt;trans&gt;</code>.</li>
+</ul>
+
+<h2 id=transformations>6. Transformations</h2>
+This section presents the different transformations available and an example of how to transform source code with the associate directives. Each directive is composed as follow: “!DIR$ MAQAO ” or “#pragma MAQAO” followed by the transformation of your choice.
+<h3 id=transloops>6.1 Loops</h3>
+This section presents all directives available for loops (Fortran do loop and C/C++ for).
+<h4 id=transunroll> 6.1.1 Unroll </h4>
+The unrolling transformation replicate the body of a loop a certain number of times; this
+number is called the unrolling factor. The unrolling can improve the performance by reducing loop
+overhead. The directive for this transformation is: <code>!DIR$ MAQAO UNROLL=value</code>.
+<div id="sides">
+  <div id=left>
+    <pre>
+    Before:
+      Do i = 1, x
+        !DIR$ MAQAO UNROLL=4
+        Do j =1, N, 1
+          A[j] = b[i] + c[j]
+        enddo
+      enddo  
+
+
+    </pre>
+  </div>
+  <div id=right>
+    <pre>
+    After:
+      Do i = 1, x
+        Do j =1, N-3, 4
+          A[j] = b[i] + c[j]
+          A[j] = b[i+1] + c[j]
+          A[j] = b[i+2] + c[j]
+          A[j] = b[i+3] + c[j]
+        enddo
+      enddo
+    </pre>
+  </div>
+Example of full unroll transformation
+</div>
+<br/>
+
+<h4 id=transfullunroll>6.1.2  Full Unroll </h4>
+This transformation is the same as previously but the loop is replaced by its unrolled body.
+The directive for this transformation is: “!DIR$ MAQAO FULLUNROLL[=N]”. An unroll factor can be
+define if bounds were not set.
+<div id="sides">
+  <div id=left>
+    <pre>
+      Before:
+        Do i = 1, x
+          !DIR$ MAQAO FULLUNROLL
+          Do j =1, 7, 1
+            A[j] = b[i] + c[j]
+          enddo
+        enddo 
+
+
+
+    </pre>
+  </div>
+  <div id=right>
+    <pre>
+    After:
+      Do i = 1, x
+        A[1] = b[i] + c[1]
+        A[2] = b[i] + c[2]
+        A[3] = b[i] + c[3]
+        A[4] = b[i] + c[4]
+        A[5] = b[i] + c[5]
+        A[6] = b[i] + c[6]
+        A[7] = b[i] + c[7]
+      enddo
+    </pre>
+  </div>
+Example of full unroll transformation
+</div>
+<br/>
+
+<h4>6.1.3  Tile </h4>
+Tiling (or Blocking) consists to divide an iteration space into tiles and transforming the loop
+nest to iterate over them. Two possibilities of tiling are available, the first one is to tile the whole
+loop nest under the directive. The directive for this transformation is: <code>!DIR$ MAQAO TILE=N</code>, when
+n is the value of the tile.
+<div id="sides">
+  <div id=left>
+    <pre>
+      Before:
+        !DIR$ MAQAO TILE=8
+        Do x = 1, N, 1
+          Do y = 1, M, 1
+            &lt;loop body&gt;
+          end do
+        end do 
+
+
+
+    </pre>
+  </div>
+  <div id=right>
+    <pre>
+    After:
+      do lt_var_x = 1, N, 8
+        do x = lt_var_x, min(N,lt_var_x+8), 1
+          do lt_var_y = 1, M, 8
+            do y = lt_var_y, min(M,lt_var_y+7), 1
+              &lt;loop body&gt;
+            end do
+          end do
+        end do
+      end do
+    </pre>
+  </div>
+Example of the tiling transformation
+</div>
+<br/>
+The second version is a variant of the tiling, the strip mining. 
+It is a method to adjust the granularity of an operation. The strip mining transforms a singly nested loop (the inner) into a doubly nested one. 
+The directive for this transformation is: <code>!DIR$ MAQAO TILE_INNER=N</code>, when N is the value of the strip. The next example illustrates the strip mining transformation
+<div id="sides">
+  <div id=left>
+    <pre>
+      Before:
+        !DIR$ MAQAO TILE_INNER=8
+        Do t = 1, N, 1
+          Do k = 1, M, 1
+            &lt;loop body&gt;
+          end do
+        end do 
+
+
+
+
+
+
+
+
+
+    </pre>
+  </div>
+  <div id=right>
+    <pre>
+    After:
+      lt_bound_M = (M /8)*8
+      do lt_var_k = 1, lt_boutnd_M, 8
+        do t = 1, N, 1
+          do y = lt_var_k, lt_var_k+8, 1
+            &lt;loop body&gt;
+          end do
+        end do
+      end do
+      if (lt_bound_M < M) then
+        do t = 1, N, 1
+          do y = lt_bound_M+1, M, 1
+            &lt;loop body&gt;
+          end do
+        end do
+      end if
+    </pre>
+  </div>
+  Example of the tiling transformation – strip mining version 
+</div>
+<br/>
+
+<h4 id=translct>6.1.4 Loop Count</h4>
+The loop count transformation consists in informing the compiler of the iterations to be
+expected for a loop by using a directive: loop count (min, max, avg). This is important given that
+many loops have bounds that are set with variables and only known to the compiler at runtime. The
+compiler attempts to determine the number of iterations for a loop and the work within that loop to
+determine if vectorizing the loop is "profitable". This information can be exploited by Intel compilers;
+by default the compiler will generate multiple variants (e.g. scalar, SSE, AVX, etc.) of the same source
+loop at the binary level, with the loop count directive it will generate much less variants. Helping in
+such a manner the compiler throughout the whole application can provide a significant performance
+gain.<br/>
+This transformation uses results from a dynamic analysis of the MAQAO values profiler VPROF.
+This module can, among other things, count the minimal, maximal and average number of iteration
+of a loop. From the VPROF’s output (a csv file), ASSIST can automatically add to all hotspots analyzed
+by VPROF the loop count directive. This feedback directed optimization avoids a time consuming and
+prone-error task and in general achieve good results.
+
+<h4>6.1.5  Block Vectorization </h4>
+We noticed in some occasions that even when the loop bound was hard-coded the compiler
+would not vectorize properly that loop. We can check such cases thanks the MAQAO module CQA
+which provides us with vectorization metrics. This transformation performs the following steps on a
+given loop:
+<ul>
+<li> Force the compiler to vectorize the loop using SIMD directive</li>
+<li> Prevent generating peeling code using vector unaligned directive</li>
+<li> Adapt the number of iterations to the vector length </li>
+</ul>
+<div id="sides">
+  <div id=left>
+    <pre>
+      Before:
+        !DIR$ MAQAO SHORTVEC
+        Do x = 1, 7,
+          &lt;loop body&gt;
+        end do
+
+
+
+
+
+
+
+
+
+    </pre>
+  </div>
+  <div id=right>
+    <pre>
+    After:
+      !DIR$ SIMD
+      !DIR$ VECTOR UNALIGNED
+      do x = 1, 4, 1
+        &lt;loop body&gt;
+      end do
+      !DIR$ SIMD
+      !DIR$ VECTOR UNALIGNED
+      do x = 5, 6, 1
+        &lt;loop body&gt;
+      end do
+      x= 7
+      &lt;loop body&gt;
+
+    </pre>
+  </div>
+  Example of the Block Vectorization
+</div>
+<br/>
+
+<h4>6.1.6  Generic Block Vectorization </h4>
+Block Vectorization can be applying even if loop’s bounds are not known. This generic version
+check rest of the modulo of the loop’s bound and apply the block vectorization on each generated
+version.
+<div id="sides">
+  <div id=left>
+    <pre>
+      Before:
+        !DIR$ MAQAO SHORTVEC%4
+        Do x = 1, 7,
+          &lt;loop body&gt;
+        end do
+
+
+
+
+
+
+
+
+
+    </pre>
+  </div>
+  <div id=right>
+    <pre>
+    After:
+      !DIR$ SIMD
+      !DIR$ VECTOR UNALIGNED
+      do x = 1, 4, 1
+        &lt;loop body&gt;
+      end do
+      !DIR$ SIMD
+      !DIR$ VECTOR UNALIGNED
+      do x = 5, 6, 1
+        &lt;loop body&gt;
+      end do
+      x= 7
+      &lt;loop body&gt;
+
+    </pre>
+  </div>
+  Example of the Block Vectorization
+</div>
+
+  </body>
+</html>
