@@ -231,13 +231,13 @@ overhead. The directive for this transformation is: <code>!DIR$ MAQAO UNROLL=val
 <div id="sides">
   <div id=left>
     <pre>
-    Before:
-      Do i = 1, x
-        !DIR$ MAQAO UNROLL=4
-        Do j =1, N, 1
-          A[j] = b[i] + c[j]
-        enddo
-      enddo  
+      Before:
+        do i = 1, x
+          !DIR$ MAQAO UNROLL=4
+          do j =1, N, 1
+            a[j] = b[i] + c[j]
+          enddo
+        enddo  
 
 
     </pre>
@@ -245,12 +245,12 @@ overhead. The directive for this transformation is: <code>!DIR$ MAQAO UNROLL=val
   <div id=right>
     <pre>
     After:
-      Do i = 1, x
-        Do j =1, N-3, 4
-          A[j] = b[i] + c[j]
-          A[j] = b[i+1] + c[j]
-          A[j] = b[i+2] + c[j]
-          A[j] = b[i+3] + c[j]
+      do i = 1, x
+        do j =1, N-3, 4
+          a[j] = b[i] + c[j]
+          a[j] = b[i+1] + c[j]
+          a[j] = b[i+2] + c[j]
+          a[j] = b[i+3] + c[j]
         enddo
       enddo
     </pre>
@@ -267,10 +267,10 @@ define if bounds were not set.
   <div id=left>
     <pre>
       Before:
-        Do i = 1, x
+        do i = 1, x
           !DIR$ MAQAO FULLUNROLL
-          Do j =1, 7, 1
-            A[j] = b[i] + c[j]
+          do j =1, 7, 1
+            a[j] = b[i] + c[j]
           enddo
         enddo 
 
@@ -281,14 +281,14 @@ define if bounds were not set.
   <div id=right>
     <pre>
     After:
-      Do i = 1, x
-        A[1] = b[i] + c[1]
-        A[2] = b[i] + c[2]
-        A[3] = b[i] + c[3]
-        A[4] = b[i] + c[4]
-        A[5] = b[i] + c[5]
-        A[6] = b[i] + c[6]
-        A[7] = b[i] + c[7]
+      do i = 1, x
+        a[1] = b[i] + c[1]
+        a[2] = b[i] + c[2]
+        a[3] = b[i] + c[3]
+        a[4] = b[i] + c[4]
+        a[5] = b[i] + c[5]
+        a[6] = b[i] + c[6]
+        a[7] = b[i] + c[7]
       enddo
     </pre>
   </div>
@@ -306,11 +306,11 @@ n is the value of the tile.
     <pre>
       Before:
         !DIR$ MAQAO TILE=8
-        Do x = 1, N, 1
-          Do y = 1, M, 1
+        do x = 1, N, 1
+          do y = 1, M, 1
             &lt;loop body&gt;
-          end do
-        end do 
+          enddo
+        enddo 
 
 
 
@@ -324,10 +324,10 @@ n is the value of the tile.
           do lt_var_y = 1, M, 8
             do y = lt_var_y, min(M,lt_var_y+7), 1
               &lt;loop body&gt;
-            end do
-          end do
-        end do
-      end do
+            enddo
+          enddo
+        enddo
+      enddo
     </pre>
   </div>
 Example of the tiling transformation
@@ -341,11 +341,11 @@ The directive for this transformation is: <code>!DIR$ MAQAO TILE_INNER=N</code>,
     <pre>
       Before:
         !DIR$ MAQAO TILE_INNER=8
-        Do t = 1, N, 1
-          Do k = 1, M, 1
+        do t = 1, N, 1
+          do k = 1, M, 1
             &lt;loop body&gt;
-          end do
-        end do 
+          enddo
+        enddo 
 
 
 
@@ -365,16 +365,16 @@ The directive for this transformation is: <code>!DIR$ MAQAO TILE_INNER=N</code>,
         do t = 1, N, 1
           do y = lt_var_k, lt_var_k+8, 1
             &lt;loop body&gt;
-          end do
-        end do
-      end do
+          enddo
+        enddo
+      enddo
       if (lt_bound_M < M) then
         do t = 1, N, 1
           do y = lt_bound_M+1, M, 1
             &lt;loop body&gt;
-          end do
-        end do
-      end if
+          enddo
+        enddo
+      endif
     </pre>
   </div>
   Example of the tiling transformation – strip mining version 
@@ -382,26 +382,20 @@ The directive for this transformation is: <code>!DIR$ MAQAO TILE_INNER=N</code>,
 <br/>
 
 <h4 id=translct>6.1.4 Loop Count</h4>
-The loop count transformation consists in informing the compiler of the iterations to be
-expected for a loop by using a directive: loop count (min, max, avg). This is important given that
-many loops have bounds that are set with variables and only known to the compiler at runtime. The
-compiler attempts to determine the number of iterations for a loop and the work within that loop to
-determine if vectorizing the loop is "profitable". This information can be exploited by Intel compilers;
-by default the compiler will generate multiple variants (e.g. scalar, SSE, AVX, etc.) of the same source
-loop at the binary level, with the loop count directive it will generate much less variants. Helping in
-such a manner the compiler throughout the whole application can provide a significant performance
-gain.<br/>
+The loop count transformation consists in informing the compiler of the iterations to be expected for a loop by using a directive: loop count (min, max, avg). 
+This is important given that many loops have bounds that are set with variables and only known to the compiler at runtime. 
+The compiler attempts to determine the number of iterations for a loop and the work within that loop to determine if vectorizing the loop is "profitable". 
+This information can be exploited by Intel compilers; by default the compiler will generate multiple variants (e.g. scalar, SSE, AVX, etc.) of the same source loop at the binary level, with the loop count directive it will generate much less variants. 
+Helping in such a manner the compiler throughout the whole application can provide a significant performance gain.<br/>
 This transformation uses results from a dynamic analysis of the MAQAO values profiler VPROF.
-This module can, among other things, count the minimal, maximal and average number of iteration
-of a loop. From the VPROF’s output (a csv file), ASSIST can automatically add to all hotspots analyzed
-by VPROF the loop count directive. This feedback directed optimization avoids a time consuming and
-prone-error task and in general achieve good results.
+This module can, among other things, count the minimal, maximal and average number of iteration of a loop. 
+From the VPROF’s output (a csv file), ASSIST can automatically add to all hotspots analyzed by VPROF the loop count directive. 
+This feedback directed optimization avoids a time consuming and prone-error task and in general achieve good results.
 
-<h4>6.1.5  Block Vectorization </h4>
-We noticed in some occasions that even when the loop bound was hard-coded the compiler
-would not vectorize properly that loop. We can check such cases thanks the MAQAO module CQA
-which provides us with vectorization metrics. This transformation performs the following steps on a
-given loop:
+<h4>6.1.5  Short Vectorization </h4>
+We noticed in some occasions that even when the loop bound was hard-coded the compiler would not vectorize properly that loop. 
+We can check such cases thanks the MAQAO module CQA which provides us with vectorization metrics. 
+This transformation performs the following steps on a given loop:
 <ul>
 <li> Force the compiler to vectorize the loop using SIMD directive</li>
 <li> Prevent generating peeling code using vector unaligned directive</li>
@@ -412,9 +406,9 @@ given loop:
     <pre>
       Before:
         !DIR$ MAQAO SHORTVEC
-        Do x = 1, 7,
+        do x = 1, 7,
           &lt;loop body&gt;
-        end do
+        enddo
 
 
 
@@ -433,33 +427,56 @@ given loop:
       !DIR$ VECTOR UNALIGNED
       do x = 1, 4, 1
         &lt;loop body&gt;
-      end do
+      enddo
       !DIR$ SIMD
       !DIR$ VECTOR UNALIGNED
       do x = 5, 6, 1
         &lt;loop body&gt;
-      end do
+      enddo
       x= 7
       &lt;loop body&gt;
 
     </pre>
   </div>
-  Example of the Block Vectorization
+  Example of the Short Vectorization
 </div>
 <br/>
 
-<h4>6.1.6  Generic Block Vectorization </h4>
-Block Vectorization can be applying even if loop’s bounds are not known. This generic version
-check rest of the modulo of the loop’s bound and apply the block vectorization on each generated
-version.
+<h4>6.1.6  Generic Short Vectorization </h4>
+Short Vectorization can be applying even if the loop bounds are not known. 
+This generic version check rest of the modulo of the loop’s bound and apply the block vectorization on each generated version.
 <div id="sides">
   <div id=left>
     <pre>
       Before:
         !DIR$ MAQAO SHORTVEC%4
-        Do x = 1, 7,
+        do x = 1, 7,
           &lt;loop body&gt;
-        end do
+        enddo
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -474,23 +491,147 @@ version.
   <div id=right>
     <pre>
     After:
-      !DIR$ SIMD
-      !DIR$ VECTOR UNALIGNED
-      do x = 1, 4, 1
+      if (MOD(N,4) == 0 ) THEN
+        !DIR$ SIMD
+        !DIR$ VECTOR UNALIGNED
+        do x = 1, N, 1
+          &lt;loop body&gt;
+        enddo
+      else if(MOD(N,4) == 1) THEN
+        !DIR$ SIMD
+        !DIR$ VECTOR UNALIGNED
+        do x = 1, N, 1
+          &lt;loop body&gt;
+        enddo
         &lt;loop body&gt;
-      end do
-      !DIR$ SIMD
-      !DIR$ VECTOR UNALIGNED
-      do x = 5, 6, 1
+      else if(MOD(N,4) == 2) THEN
+        !DIR$ SIMD
+        !DIR$ VECTOR UNALIGNED
+        do x = 1, N-2, 1
+          &lt;loop body&gt;
+        enddo
+        !DIR$ SIMD
+        !DIR$ VECTOR UNALIGNED
+        do x = N-2, N, 1
+          &lt;loop body&gt;
+        enddo
+      else if(MOD(N,4) == 3) THEN
+        !DIR$ SIMD
+        !DIR$ VECTOR UNALIGNED
+        do x = 1, N-2, 1
+          &lt;loop body&gt;
+        enddo
+        !DIR$ SIMD
+        !DIR$ VECTOR UNALIGNED
+        do x = N-2, N-1, 1
+          &lt;loop body&gt;
+        enddo
         &lt;loop body&gt;
-      end do
-      x= 7
-      &lt;loop body&gt;
+      endif
+    </pre>
+  </div>
+  Example of the Generic Short Vectorization
+</div>
+
+<h3 id=transfunc>6.2 Functions</h3>
+This section shows all transformations available for functions and how to procced to apply each one
+with directives.
+
+<h4>6.2.1 Partial Dead Code Elimination </h4>
+The dead code elimination works as follow: 
+In our detection algorithm, we search if conditions are always (/never) true or false. 
+Currently, it is only available with Integers or for some cases with variables. 
+If a variable is in the expression to evaluate, we are looking for the last assignment of this variable. 
+If it is an Integer and if this assignment is not in a conditional or in a loop, we consider the value instead of the variable to evaluate the expression (See example below).
+In the next example we can see that two transformations were applied. 
+The first was on statement (1): its conditional will always be false and only the else part of this statement will be executed, therefore we replace the whole statement by the “else” body. 
+A second elimination was applied, on statement (2): we can observe that the loop “do j=k, 99,1” will never be execute due to k’s value (100). 
+Therefore, we delete the statement which makes the loop above empty, which leads to its deletion making the “true” body of the “if” statement empty. 
+To avoid to have empty body we invert the conditional with a NOT and move the “else” body into the “if” body.
+<div id="sides">
+  <div id=left>
+    <pre>
+      Before:
+        !DIR$ MAQAO DEADCODE
+        subroutine func (x, k, a)
+          integer, intent(in) :: x, k
+          Real, dimension(1), intent(inout) :: a
+          ...
+          x = 3
+          k = 100
+          ...
+          do i = 1, x
+            if x > 4 then!(1)
+              a[i] = 0
+            else
+              a[i] = 1
+            endif
+          enddo
+          if k > y then !(2)
+            do i = 1, 1000, 1
+              do j =k, 99, 1
+                CALL intensiveCalcul(a,i,j)
+              enddo
+            enddo
+          else
+            CALL smallCalcul(a,i,j)
+          endif
+          ...
+          return
+        end subroutine
+    </pre>
+  </div>
+  <div id=right>
+    <pre>
+    After:
+      Subroutine func (x, k, a)
+        integer, intent(in) :: x, k
+        Real, dimension(1), intent(inout) :: a
+        ...
+        x = 3
+        k = 100
+        ....
+        do I = 1, x
+          a[i] = 1
+        enddo
+        if .NOT.( k > y) then
+          CALL smallCalcul(a,i,j)
+        endif
+        ...
+        return
+      end subroutine
+
+
+
+
+
+
+
+
+
+
 
     </pre>
   </div>
-  Example of the Block Vectorization
+  Example of the partial dead code elimination transformation
 </div>
+<br/>
+Actuals compilers do the same work and more, but this transformation is the first of a series of optimizations working on functions like the function specialization.
+
+<h3 id=transfuncspe>6.2.2 Function Specialization</h3>
+For a specific run it is possible than a function will always be called with an idempotent parameter, or if the user know bounds of a parameter (also available for a variable in the body of the function), so this transformation create a copy of the function removing all dead code implies by the information in the directive. 
+There is a variant of this directive where the “if then CALL func_spe else...” was not create, the directive for that is: !DIR$ MAQAO SPECIALIZE_WITHOUT_CALL(<info>).
+The figure 6 and7 show the specialization function, before and after transformation. 
+The loop (1) was remove because the condition of the “if” statement (2) was detected as always false and therefore the loop become empty. 
+The same applies for the “if” statement (3), the user indicate than the variable “k” will be less or equals to10, the “else” (4) part will always the chosen path, so the “if” statement was replaced by the else body. 
+As show on figure 6, the user can give multiple indications about a variable. 
+The user can seta value to the variable by the operator “=”; he can also give bounds, with operators “<”, “>”, the value will not be including; finally he can indicate a set of value with operator “={val1,val2}”, in this case the variable values can only be between “val1” and “val2” including.
+
+
+
+
+
+
 
   </body>
 </html>
