@@ -1,0 +1,910 @@
+n<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+
+    var figureID : document.createElement("figureID");
+
+<!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>ASSIST a MAQAO module | ASSIST</title>
+<meta name="generator" content="Jekyll v3.7.4" />
+<meta property="og:title" content="ASSIST page" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Automatic Source-to-Source assISTant" />
+<meta property="og:description" content="Automatic Source-to-Source assISTant" />
+<link rel="canonical" href="https://youelebr.github.io/index.html" />
+<meta property="og:url" content="https://youelebr.github.io/index.html" />
+<meta property="og:site_name" content="ASSIST" />
+<script type="application/ld+json">
+{"headline":"ASSIST","@type":"WebPage","url":"https://youelebr.github.io/index.html","description":"Automatic Source-to-Source assISTant","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#157878">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">ASSIST</h1>
+      <h2 class="project-tagline">Automatic Source-to-Source assISTant</h2>
+      
+        <a href="https://github.com/youelebr" class="btn">View on GitHub</a>
+    </section>
+
+     <section class="main-content">
+      <hr />
+<p><a href="/index.html">Home</a> - 
+<a href="dissemination.html">Publications</a> - 
+<a href="gettingstarted.html">Getting Started</a> -
+<!--<a href="documentation.html">Documentation</a> - -->
+<a href="useexample.html">Tutorials</a> -
+<a href="https://maqaoteam.github.io/MAQAO/">MAQAO</a> -
+<a href="https://maqaoteam.github.io/MAQAO/team.html">MAQAO Team</a> </p>
+
+<hr />
+<h1 id="experimentations">Experimentations</h1>
+In this section the results of ASSIST are presented and compared with Intel compiler PGO mode denoted (IPGO) in the sequel.
+Intel compilers are neither open source nor free, but they provide the best performance in our tests (compared with GCC and LLVM). 
+The second main reason behind this choice of PGO comparison lies in the lack of availability for FDO tools for regular users. 
+As a reminder, for IPGO, the use of profiling data enables some specific optimizations but can also modify the behavior of other optimizations such as: 
+<ul>
+    <li> using feedback data on function entry counts. Function grouping is done to put hot/cold functions adjacent to one another; </li>
+    <li>value profiling of an indirect and virtual function calls. It is done to specialize indirect function call for a common target; </li>
+    <li>annotating the intermediate language with edge frequencies and block counts. They are then used to guide a lot of the optimization decisions made by other passes of the compiler, such as: the in-liner and partial in-liner, the basic block layout, the conversion from switch tables to "\textit{if}" statements, loop transformations like unrolling, etc.</li>
+</ul>
+
+Our goal is not to "mimic" IPGO, but rather to present a complementary approach which goes beyond the observed limitations.
+All the measurements presented below have been gathered on an Intel(R) Skylake SP based machine (Intel Xeon Platinum 8170 CPU@2,10GHz) with Intel compiler version 17.0.4. 
+Multiple executions (exactly 31) were performed to reach statistical stability and avoid outliers in data measurement.
+
+In this chapter, the results of experimental transformations offered by ASSIST are presented. 
+They are based on feed back data and user insight.
+This study is application centered, we have looked for an approach to get a good performance gain at minimal cost; starting from the specific needs of each application based on what MAQAO profilers return, we can trigger the right transformation that will answer these needs, thus limiting the search space and avoiding to blindly test different useless transformations. 
+In this chapter, a speedup is considered as a faster execution of the application.
+
+<h2 id=appPool>Application Pool</h2>
+Multiple fully industrial class applications were used to test our approach:
+
+<p><a href="https://www.coria-cfd.fr/index.php/YALES2"><text-bold>YALES2</text-bold></a> (version 0.5.0) is a numerical simulator of turbulent reactive flows using the Large Eddy Simulation method. It is a finite volume code for unstructured meshes with an innovative 4th order spatial scheme for the discretization of convective and diffusive terms. It is based on the low-Mach number approximations of the Navier-Stokes equations which solves an elliptic Poisson equation at each iteration. The MPI version uses sub-domain decomposition with adjustable domain size allowing efficient cache usage. ASSIST has been tested on two of their datasets named "3D_Cylinder", a pure CFD computation, and "1D_COFFE", a combustion computation. The application is written in Fortran 2003 and approximately contains 276 000 lines of code.</p>
+
+<p><a href="http://www.cerfacs.fr/avbp7x/"><text-bold>AVBP</text-bold> </a>(version D7.0.1) is a parallel CFD code developed by CERFACS. 
+It solves the three-dimensional compressible Navier Stokes equations on unstructured multi-element grids. It uses third space and time Taylor Galerkin numerical schemes. The code has been ported and tested in up to 200K cores with an 85% strong scaling efficiency (BG/Q) for a 200M element case (1000 elements per MPI rank).  
+Cache coloring uses the reverse Cuthill-Mckee method. ASSIST has been tested on three representative datasets namely: SIMPLE (helicopter chamber demonstrator combustion simulation), NASA (NACA blade simulation) and TPF (large flow simulation). The application is written in Fortran 95 and approximately contains 275 000 lines of code.</p>
+
+<p><a href="https://www.abinit.org/"><text-bold>ABINIT</text-bold> </a> (version 7.10.5) is a package allowing users to find the total energy charge density and the electronic structure of these systems made of electrons and nuclei (molecules and periodic solids) within Density Functional Theory (DFT) using pseudo-potentials (or PAW atomic data) and a planewave basis.
+The application approximately contains 807 000 lines of Fortran 90.</p>
+
+<p><a href=""><text-bold>POLARIS (MD)</text-bold> </a> (version 1.0.5.18) 
+is the only code that can be used to perform microscopic simulations of high precision (especially for the treatment of interatomic interactions) for molecular systems of several millions atoms with "speed" of the order of one nanosecond a day. 
+On this last point ("speed"), many improvements are still possible to consider "speed" of several nanoseconds per day. Finally, its hybrid parallelization scheme (OPENMP / MPI) makes it particularly well suited to the new generation of "many-core" systems.</p>
+
+<p><a href=""><text-bold>Convolutional Neural Network (CNN)</text-bold></a> is a state-of-art DNN for image recognition. 
+New CNN workloads emerged and are pushing the limits of today's hardware. 
+One of the expensive kernels is a small convolution in such specific sizes that calculations in the frequency space are not the most efficient method when compared with direct convolutions. 
+Training CNNs requires an enormous amount of time, making their optimization very critical. 
+The CNN code refers to the one used in \cite{cnn} and the layers used are the GoogleNet\_V1. 
+The convolution technique consists in executing all CNN layers one after the other with different sizes of filter (1x1, 3x3 and 5x5). This codelet is written in C and contains 450 lines of codes.</p>
+
+<p><a href="https://qmcpack.org/"><text-bold>Mini QMCPACK</text-bold></a> is a simplified but computationally accurate implementation of the real space quantum Monte Carlo algorithms implemented in the full production QMCPACK~\cite{qmcpack} application. Mini QMCPACK and QMCPACK are available on github.
+
+<h2 id="impactofvalueprofiling">Impact of Value Profiling</h2>
+
+<!--%Graphs of LCT-->
+ <br/>
+<center>
+ <iframe src="pics/avbp_tpf_lct_histo_err_mpi.pdf" style="width: 40%;height: 22%;border: none;" frameborder="0"></iframe>
+ <iframe src="pics/avbp_nasa_lct_histo_err_mpi.pdf" style="width: 40%;height: 22%;border: none;" frameborder="0"></iframe>
+ <br/>
+      Figure 1: <text-bold>Histograms</text-bold>: impact (speedup) of ASSIST LCT, IPGO and combination of both compared with original version for the same number of threads of AVBP with the test case TPF and NASA (Higher is better).
+      Errors bars represent original version / minimum speedup and original version / maximum speedup.<br/>
+      <text-bold>Plots</text-bold>: Percentage of execution spent in MPI.}
+<br/>
+<br/>
+ </center>
+<!--  <br/>
+<center>
+ <iframe src="pics/avbp_nasa_lct_histo_err_mpi.pdf" style="width: 40%;height: 22%;border: none;" frameborder="0"></iframe>
+ <br/>
+      Figure 2: <text-bold>Histograms</text-bold>: impact (speedup) of ASSIST LCT, IPGO and combination of both compared with original version for the same number of threads of AVBP with the test case NASA (Higher is better).
+      Errors bars represent original version / minimum speedup and original version / maximum speedup.<br/>
+      <text-bold>Plots</text-bold>: Percentage of execution spent in MPI.}
+<br/>
+<br/>
+ </center>-->
+  <br/>
+<center>
+ <iframe src="pics/yales_cylinder_lct_histo_err_mpi.pdf" style="width: 40%;height: 27%;border: none;" frameborder="0"></iframe>
+ <iframe src="pics/yales_coffee_lct_histo_err_mpi.pdf" style="width: 40%;height: 27%;border: none;" frameborder="0"></iframe>
+ <br/>
+      Figure 2: <text-bold>Histograms</text-bold>: impact (speedup) of ASSIST LCT, IPGO and combination of both compared with original version for the same number of threads of Yales2 with the test case with the test case 3D CYLINDER and 1D COFFEE (Higher is better)..
+      Errors bars represent original version / minimum speedup and original version / maximum speedup.<br/>
+      <text-bold>Plots</text-bold>: Percentage of execution spent in MPI.}
+<br/>
+<br/>
+ </center>
+<!--  <br/>
+<center>
+ <iframe src="pics/yales_coffee_lct_histo_err_mpi.pdf" style="width: 40%;height: 27%;border: none;" frameborder="0"></iframe>
+ <br/>
+      Figure 4: <text-bold>Histograms</text-bold>: impact (speedup) of ASSIST LCT, IPGO and combination of both compared with original version for the same number of threads of Yales2 with the test case with the test case 3D CYLINDER (Higher is better)..
+      Errors bars represent original version / minimum speedup and original version / maximum speedup.<br/>
+      <text-bold>Plots</text-bold>: Percentage of execution spent in MPI.}
+<br/>
+<br/>
+ </center>-->
+
+<br/>
+<br/>
+<center>
+<table>
+    <!-- <thead>
+        <tr>
+            <th colspan="2">The table header</th>
+        </tr>
+    </thead> -->
+    <tbody>
+        <tr>
+            <td></td>
+            <td>AVBP NASA</td>
+            <td>AVBP TPF</td>
+            <td>AVBP SIMPLE</td>
+            <td>Yales2 3D Cylinder</td>
+            <td>Yales2 1D COFFEE</td>
+        </tr>
+
+        <tr>
+            <td>Number of loops</td>
+            <td>149</td>
+            <td>173</td>
+            <td>158</td>
+            <td>162</td>
+            <td>122</td>
+        </tr>
+    </tbody>
+</table>
+Table 1: Number of loops processed by ASSIST LCT for each application and test case.
+</center>
+<br/>
+<br/>
+<br/>
+
+<p>Our first FDO optimization uses loop trip counts information obtained by value profiling using MAQAO VPROF. 
+When loops exhibit a complex control flow due to multi-versioning, the knowledge of the trip count can help the compiler simplify the decision tree.</p>
+
+<p>Figure1&amp;2 present the speedups obtained with LCT or IPGO and the combination of both for each application/dataset.
+For these applications, the combination of LCT and IPGO reaches a speed up of 14\% for a sequential YALES2 run with the 3D Cylinder dataset. 
+To ensure that the optimization is still efficient in parallel, these figures present the impact of LCT, of IPGO and  of these two combined compared to original versions with the same number of processes. 
+In most cases, the speedup decreases when the number of processes increases. 
+This is due to the communications which proportionally increase (see MPI time plots) at the same time and take most of the execution time.
+On the contrary, for Yales2 with 1D COFFEE dataset, we observe speedup increase with the number of processes. 
+This is due to an Intel compiler optimization on an Intel library function that performs a copy of a string used for all communications. 
+Moreover, the higher the number of communications, the more often this function is called. 
+Providing the trip count of the loop containing this function to the compiler, allows it to perform advanced optimization. 
+This explains the speedup obtained by increasing the number of processes.</p>
+
+<br/>
+<center>
+  <embed src="pics/yales2_cylinder_cumulatedspeedup_crop.pdf" width="500" height="250" type="application/pdf">
+  <embed src="pics/avbp_simple_cumulatedspeedup_crop.pdf"     width="500" height="250" type="application/pdf">
+  <br/>
+    Figure 3: Cumulated speedup versus number of loops processed by ASSIST, sorted by their coverage, on Yales2 using the 3D CYLINDER test case and AVBP using the NASA test case.}
+  <br/>
+  <br/>
+</center>
+
+<p>After applying ASSIST LCT, we used our verification system based on CQA to statically verify that the compiler did not generate a worse performing code. 
+The verification system is not fully implemented, so we decided to only apply it on hot loops and confirm that the transformation does not downgrade performances.
+The strength of this transformation comes from the number of loops processed by ASSIST; as shown on figure3, the first twenty loops provide more than fifty percent of the total speedup gain but 130 loops are necessary to reach a maximum speedup for Yales2.
+For AVBP, it only requires 15 loops to reach half of the total speedup and 90 loops for the maximum. 
+We can observe some performance degradation on a few loops but in general these degradations are limited to 0.01 second and can be due to the approximation. 
+Number of loops processed for each test case and application is defined in table1.<p>
+
+<p>This study shows that providing the compiler with a loop trip count feedback (minimum, average and maximum values) results in significant performance gains. 
+When compared with IPGO, performance gains are lower but it should be kept in mind that IPGO and LCT ASSIST are using different optimizations.
+The most important point is that both can be combined and that their combination leads to higher gains.</p>
+
+<h2 id="impactofspecialization">Impact of Specialization</h2>
+<p>While optimizing applications, we notice that we often resort to function or loop specialization before applying other transformations. The following examples show how specialization alone, or coupled with other transformations, can provide significant performance gain.</p>
+
+<h3 id=speImpact_speonly>Specialization Only</h3>
+<p>In this example, our target loop nest is composed of seven nested loops and ASSIST is used in two steps: 
+first, as an automatic tool, using the automatic specialization to detect variables that can be automatically specialized. 
+In this case, ASSIST finds that by specializing variables for certain values, it is possible to set bounds of the two innermost loops within the nest. 
+It is also possible to remove the \textit{"if"} statements that are in these two loops;
+then, as users, we know that two variables - which are computed inside the loop nest - only have three possible values for most layers.
+These are calculated within the loop nest which prevents the previous automatic specialization. 
+After both specializations the loop nest has increased from 30 lines to 922 lines to handle all cases of specializations, this transformation can hardly be done manually without making mistakes.</p>
+<br/>
+<center>
+  <embed src="pics/cnn_spe.pdf" width="550" height="350" type="application/pdf">
+  <br/>
+    Figure 4: Convolution Neural Network - Speedup of GoogleNet_V1 layers after specialization, compared to the original version.}
+  <br/>
+  <br/>
+</center>
+
+<p>Figure 4 presents the speedups after specializations compared with the original version. 
+Specializations offer a gain between 1.4x and 5.4x on all tested layers by creating multiple less complex versions of the loop nest that the compiler can more easily optimize.
+The layers used in this case are those with a (1x1) and (3x3) filters. 
+IPGO does not appear on this figure because it does not gain any performance.</p>
+
+<h3 id=speImpact_svt>Combined With SVT</h3>
+<h4>With AVBP</h4>
+<p>In this example, MAQAO indicates that, in the ten most time-consuming functions, there are loops presenting a poor vectorization efficiency and a low trip count for the three datasets: NASA, TPF and SIMPLE.
+We use ASSIST to couple both specializations and SVT on these functions. 
+We first apply loop and function specializations separately, then we apply short vectorization on the most efficient version. 
+Figure 5 only presents results on the dataset SIMPLE because compared to speedup obtained with IPGO and ASSIST LCT, it is the most relevant.</p>
+<br/>
+<center>
+  <embed src="pics/avbp_simple_speedup_by_function.pdf" width="550" height="350" type="application/pdf">
+  <br/>
+    Figure 5: Speedups by function before and after applying transformations with ASSIST (SVT, function/loop specialization, LCT) and IGO compared with the original version (higher is better) on AVBP using the SIMPLE test case (sequential version).}
+  <br/>
+  <br/>
+</center>
+
+<br/>
+<center>
+  <embed src="pics/avbp_tpf_lct_svt_histo_err_mpi.pdf" width="550" height="200" type="application/pdf">
+  <embed src="pics/avbp_nasa_lct_svt_histo_err_mpi.pdf" width="550" height="200" type="application/pdf">
+  <embed src="pics/avbp_simple_lct_svt_histo_err_mpi.pdf" width="550" height="220" type="application/pdf">
+  <br/>
+    Figure 6: 
+    <text-bold>Histograms</text-bold>: Speedups of ASSIST SVT (i.e. short vectorization+function/loop specialization), ASSIST LCT, IPGO and ASSIST LCT+IPGO compared with the original version for the same number of threads (Higher is better) on AVBP using NASA, TPF and SIMPLE test cases.
+    <text-bold>Error bars</text-bold> represent original version divided by minimum speedup and original version divided maximum speedup on AVBP.
+    <text-bold>Plots</text-bold>: Percentage of execution time spent in MPI.}
+  <br/>
+  <br/>
+</center>
+<br/>
+<center>
+<table>
+    <!-- <thead>
+        <tr>
+            <th colspan="2">The table header</th>
+        </tr>
+    </thead> -->
+    <tbody>
+        <tr>
+            <td>loop id</td>
+            <td>ite min</td>
+            <td>ite max</td>
+            <td>ite avg</td>
+            <td>Potential speedup</td>
+            <td>Coverage</td>
+        </tr>
+        <tr>
+          <td>loop 2690</td> <td>4</td> <td>4</td> <td>4</td> <td>6.40</td> <td>0.61</td>
+        </tr>
+        <tr>
+          <td>loop 2587</td> <td>5</td> <td>5</td> <td>5</td> <td>2.00</td> <td>0.97</td>
+        </tr>
+        <tr>
+          <td>loop 2308</td> <td>3</td> <td>3</td> <td>3</td> <td>8.00</td> <td>0.33</td>
+        </tr>
+        <tr>
+          <td>loop 2551</td> <td>5</td> <td>5</td> <td>5</td> <td>8.00</td> <td>0.37</td>
+        </tr>
+        <tr>
+          <td>loop 2723</td> <td>5</td> <td>5</td> <td>5</td> <td>2.00</td> <td>0.35</td>
+        </tr>
+        <tr>
+          <td>loop 16182</td> <td>4</td> <td>4</td> <td>4</td> <td>4.00</td> <td>11.25</td>
+        </tr>
+        <tr>
+          <td>loop 13641</td> <td>4</td> <td>4</td> <td>4</td> <td>4.00</td> <td>1.52</td>
+        </tr>
+        <tr>
+          <td>loop 13752</td> <td>4</td> <td>4</td> <td>4</td> <td>2.67</td> <td>3.46</td>
+        </tr>
+        <tr>
+          <td>loop 13692</td> <td>4</td> <td>4</td> <td>4</td> <td>4.00</td> <td>2.98</td>
+        </tr>
+        <tr>
+          <td>loop 13902</td> <td>3</td> <td>3</td> <td>3</td> <td>6.67</td> <td>2.51</td>
+        </tr>
+    </tbody>
+</table>
+Table 2: CQA &amp; VPROF metrics of loops of the hotspot functions of AVBP, with the SIMPLE dataset, before applying the SVT.
+</center>
+<br/>
+
+<p>Figure 6 compares the speedup ratios of each version (LCT, IPGO, LCT + IPGO and SVT). 
+For the TPF dataset, SVT allows to gain as much as the combination of LCT and IPGO.
+But for the NASA dataset, the best results of LCT+IPGO only allows to reach half of the speedup obtained with SVT for one MPI thread.
+It is more blatant with the SIMPLE dataset, the speedup of LCT and IPGO does not reach more than 2% individually and 4\% when combined, contrary to ASSIST SVT which reaches a 12% speedup  for the SIMPLE dataset. 
+When the compiler fails to vectorize a loop properly, SVT is very effective given that it explicitly exposes a simpler loop structure with no peel or tail loops to the compiler.</p>
+
+<p>There are two mains reasons why the compiler does not vectorize: 
+first, the dependence analysis reveals dependencies preventing vectorization, and second, the cost model used by the compiler produces estimates indicating that a vectorization is not beneficial. 
+For other cases, the compiler performed an outer vectorization on loops with a small number of iterations, CQA detects a bad "vectorization efficiency" on these loops. 
+CQA offers multiple vectorization metrics such as vectorization-ratio or a vector-efficiency ratio on loads, stores, etc. allowing to assess the performance level obtained. 
+In our case, we use these metrics to provide ASSIST with quality estimates of the vectorization carried out by the compiler. We can then decide whether or not to perform a good vectorization in order to finally trigger the transformation.
+The short vectorization transformations force the compiler to vectorize small loops with a small number of iterations; the compiler also fully unrolls these loops.
+After transformations, we use our verification system with CQA to validate the transformations. 
+Indeed, before transformations, CQA only detects 33% of vectorization and after, CQA reports the loop as fully vectorized.</p>
+
+<p>To apply SVT, loop bounds have to be known. To set these bounds, we specialize functions on one side, and loops on the other; we then apply the SVT on the best specialization for each function.
+Figure 5 presents the speedups obtained at each step to show their individual impact, we add ASSIST LCT and IPGO for comparison.
+We observe that SVT can raise up to 2.6x while the loop and function specialization only achieves, at best, a speedup of 1.5x. 
+Performing only loop or function specialization may be counterproductive in some cases because of the induced complexity of the control flow, if no further induced optimizations are possible. 
+Table2 presents metrics from CQA and VPROF of loops before applying the SVT; these metrics did motivate our choice to use SVT. 
+For all of these loops, the number of iterations is smaller than five and with a good potential speedup if fully vectorized.</p>
+
+<p>To understand why the function specialization degrades performances of the function "gather_o_cpy", we analyze and compare the next three versions: the original version and the versions of both specializations.
+First, the original loop nest is presented on code below and the results on the image1.
+They show the original loop nest and the execution information collected by MAQAO on that loop nest.
+As we can see, the compiler has created several versions of this loop nest. 
+Each loop of the figure~\ref{AVBP_orig_info} represent a different version of the same loop nest (which start at line "219" to "223").
+The sum of the execution time of all of these versions is 7.1 seconds out of the 36.48 seconds of the execution of the function.
+For example, the loop 13955 corresponds to a version where the loop nest has been unrolled 72 times with the loop 13944 as peel/tail.</p>
+
+<pre>
+ ...
+  DO n=1, nel
+    DO no = 1, nvert
+      !DIR$ SIMD
+      DO k= -nproduct+1, 0
+        zobj(no * nproduct + k , n) = z(ielob(no,n) * nproduct + k)
+      END DO
+    END DO
+  END DO
+  ...
+</pre>
+<center>
+The loop nest of the function "gather_o_cpy".
+<br/>
+<br/>
+</center>
+<center>
+<br/>
+<img class="center-img"; src="pics/avbp_gather_o_cpy_orig2.png" alt="all versions of the gather_o_cpy loop">
+Img 1: Original version: Execution time details for the function "gather_o_cpy" and all the variants of its loop.
+<br/>
+<br/>
+</center>
+
+<p>Now, we compare both specialization versions.
+On one side, image2 shows the results for the function specialization version.
+All versions of the function are detailed with their coverage, execution time by function and associated loop nests.
+On the other side, image3 shows the results for the loop specialization version.
+All loops versions are in the same function.
+To easily compare them, we numbered each loop nest. 
+Each number correspond to the same specialized version.
+There was no number in image1 because all loops correspond to the same source loop different </p>
+
+<center>
+<br/>
+<img class="center-img"; src="pics/avbp_gather_o_cpy_spef.png" alt="all versions of the gather_o_cpy loop">
+Img 2: Function Specialization version: Execution time details for the function "gather_o_cpy" and its loops.
+<br/>
+<br/>
+</center>
+
+<center>
+<br/>
+<img class="center-img"; src="pics/avbp_gather_o_cpy_spel.png" alt="all versions of the gather_o_cpy loop">
+Img 3: Loop Specialization version: Execution time details for the function "gather_o_cpy" and its loops..
+<br/>
+<br/>
+</center>
+
+<p>We can observe two main reasons for this performance degradation.
+First, the compiler differently managed the two versions.
+If we look at loop 1; for the function specialization, the compiler optimizes the inner loop in contrary with the loop specialization where the nest to come two single loops. </p>
+
+<p>Second, the loops do not represent the majority of the execution time of the function.
+We can see on image3 that the execution of the function "gather_o_cpy" last 23.38 seconds.
+However, loops only represent approximately 24% (=5.67 seconds) of the whole execution time.
+Similarly for the function specialization version, if we sum up all specialized functions, the execution time is 32.22 seconds. 
+The sum of the loops of these functions also represents approximately 24% (=7.5 seconds) of the whole execution time.
+The difference between the two versions without loops is of 6 seconds. 
+Most of the time is spent in the function and not in the loop.
+This is the main reason why function specialization is slower.
+Both specializations aim to improve these loops by fixing the number of iterations.
+However, by duplicating the function, we also duplicate all other elements such as the call, the parameters, etc.</p>
+
+<p>Such cases can be detected by subtracting the time of the targeted loop to the time of the function containing this loop. 
+It will help to decide which one of both loop and function specializations to perform and thus avoiding such performance slowdowns.
+However, subtract the execution time of the loop to the one of the function only work if we want to only specialize this loop and the specialization has no impact on the rest of the function. </p>
+
+<h4>With Polaris</h4>
+
+<p>Polaris has the same problem as AVBP with two most time-consuming scatter/gather loops with poor vectorization efficiencies.
+Their number of iterations is higher than usual (around 60 for both) so we use the ASSIST generic SVT with a modulo of four.
+Table3 presents the results of these two loops when using the dataset "test_1.0.5.18". </p>
+
+<center>
+<table>
+    <!-- <thead>
+        <tr>
+            <th colspan="2">The table header</th>
+        </tr>
+    </thead> -->
+    <tbody>
+        <tr>
+          <td></td>  
+          <td>Execution Time before trans (sec)</td>
+          <td>Execution Time after  trans (sec)</td>
+          <td>Speedup (higher is better)</td>
+          <td>Coverage</td>
+        </tr>
+        <tr>
+          <td>Polaris</td> <td>73.32</td> <td>70.26</td> <td>1.04</td> <td></td>
+        </tr>
+        <tr>
+          <td>loop 6909</td> <td>4.27</td> <td>3.14<</td> <td>1.36</td> <td>5.72%</td>
+        </tr>
+        <tr>
+        <td>loop 6911</td> <td>3.64</td> <td>2.36</td> <td>1.54</td> <td>4.98%</td>
+        </tr>
+    </tbody>
+</table>
+Table 3: Execution time and speedups of ASSIST SVT (i.e. generic short vectorization) compared with the original version on Polaris using the "test\_1.0.5.18" test case.
+</center>
+<br/>
+<br/>
+
+<p>These two loops represent 10% of the coverage of the whole application.
+ASSIST has been used on only these two loops for two reasons.
+First, 70% of the application time is passed in a function which computes each point of the matrix without using a loop and where we can not perform any transformation.
+Second, other loops are array line fortran representations; compilers refuse any loop-directive above this kind of loop, so we cannot apply the LCT on Polaris.</p>
+
+<p>SVT has not been applied on Yales2 because CQA indicated that vectorization would lead to the use of scatter/gather instructions which are costly and make vectorization not beneficial. 
+The level of indirection is high, due to irregular geometric access and the main bottleneck is the address computation.</p>
+
+<h3>Combined With Tiling</h3>
+<p>In this example, ASSIST is used as a semi-automatic tool and is fully driven by the user. 
+At first, a full profiling of the code is performed followed by a value profiling on one of the main hotspots of the application. 
+Three input parameters were found to be of importance.</p>
+
+<p>First, the function can be called with two different types of input data, either real-valued data or complex-valued data. 
+A given test case will almost exclusively use one or the other. 
+As those data are expressed as an array with one or two elements in a part of the code, specialization of this value simplifies address computations and vector accesses by making the stride a compile-time constant rather than a dynamic value.</p>
+
+<p>Second, multiple variants of the algorithm are implemented in the function. 
+Which exact variant is used, depends on two integer parameters. 
+Again, a given test case is usually heavily biased towards a small subset of possible cases. 
+The specialization of one case allows to remove multiple conditionals. 
+For a given case, different branches appears in the loop nests. 
+This removal of conditionals exposes the true dynamic chaining of the loop nest directly to the compiler with no intervening control-flow break.</p>
+
+<p>Once specialized with ASSIST, the function becomes much simpler to study. 
+A study using MAQAO DECAN previously indicated that data access was very costly and that tiling would be very beneficial. 
+More precisely, a large array is updated in its entirety inside a loop; a bad pattern for cache usage. 
+Loop tiling makes it possible to update the array by block, and to only scan and update the array once. 
+While this work would not be particularly difficult to do by hand, more than two dozen variants of the loop nest with similar properties appear in the original function. 
+As the transformed loop adds an extra loop to the nest, this complicates indexes and requires a remainder loop. 
+It is much easier and much more reliable to automate the transformation process.</p>
+
+<pre>
+  !DIR$ MAQAO SPECIALIZE(choice=1,paw_opt=3,cplex=2)
+  !DIR$ MAQAO SPECIALIZE(choice=1,paw_opt<3,cplex=2)
+  !DIR$ MAQAO SPECIALIZE(choice=1,paw_opt>3,cplex=2)
+  subroutine opernlb_ylm(choice,cplex,paw_opt,...)
+   ...
+   if(choice==1) then 
+    !DIR$ MAQAO TILE_INNER_IF_SPE_choicee1=8
+    do ilmn=1, nlmn
+     do k=1, npw
+      z(k)=z(k)+ffnl(K,1,ilmn)*cplx(gxf(1,ilmn) &
+           ,gxf(2,ilmn),kind=dp)
+     end do
+    end do
+   end if
+   ...
+  end subroutine
+</pre>
+<center>
+(a) Before short vector optimization
+</center>
+<br/>
+<pre>
+  SUBROUTINE opernlb_ylm(...)
+   IF ((choice.EQ.1).AND.(paw_opt.EQ.3)/aND(cplex.EQ.2)) then
+    CALL opernlb_ylm_ASSIST_choicee1_paw_opte3_cplexe2(...)
+    RETURN
+   END IF
+   IF ((choice.EQ.1).AND.(paw_opt.LT.3)/aND(cplex.EQ.2)) then
+    CALL opernlb_ylm_ASSIST_choicee1_paw_opte3_cplexe2(...)
+    RETURN
+   END IF
+   IF ((choice.EQ.1).AND.(paw_opt.GT.3)/aND(cplex.EQ.2)) then
+    CALL opernlb_ylm_ASSIST_choicee1_paw_opte3_cplexe2(...)
+    RETURN
+   END IF
+   ...
+  END SUBROUTINE
+  ...
+  SUBROUTINE opernlb_ylm_ASSIST_choicee1_paw_opte3_cplexe2(...)
+   ...
+   lt_bound_npw = (npw / 8) * 8
+   DO lv_var_k = 1, lt_bound_npw, 8
+     DO ilmn = 1, ilmn 
+       DO k = lt_var_k, lt_var_k + (8-1)
+        z(k)=z(k)+ffnl(K,1,ilmn)*cplx(gxf(1,ilmn) &
+           ,gxf(2,ilmn),kind=dp)
+       END DO
+     END DO
+   END DO
+   ...
+  END SUBROUTINE
+  SUBROUTINE opernlb_ylm_ASSIST_choicee1_paw_opti3_cplexe2(...)
+   ...
+  END SUBROUTINE
+  SUBROUTINE opernlb_ylm_ASSIST_choicee1_paw_opts3_cplexe2(...)
+   ...
+  END SUBROUTINE
+</pre>
+<center>
+(b) After short vector optimization
+<br/>
+ABINIT - Example of function specialization coupled with loop tiling, performed with ASSIST, for the use case Ti-256. Boxes highlight the tiling transformation of the innermost loop.
+</center>
+<br/>
+<br/>
+<br/>
+
+<center>
+<br/>
+<img class="center-img"; src="pics/abinit_speedup_gnuplot.png" alt="abinit speedups graph">
+Figure 7: ABINIT - Ti-256 - Speedups of IPGO, ASSIST LCT, specialized with ASSIST, specialized and tiled with ASSIST compared to the original version.
+<br/>
+<br/>
+</center>
+
+<p>Part (a) shows the directives on an extract of the function. 
+Three specialized variants are produced for the common use cases in our reference test Ti-256, by the first three lines of the figure. 
+The critical loop nest is subsequently tiled, but only in the specialized version, by the directive immediately above the loop nest. 
+Part (b) shows extracts from the output of ASSIST. 
+The specialized variants are called whenever the parameters are appropriate. </p>
+
+<p>Every condition previously dynamically encountered is now collapsed into that one test. 
+The original function also shows the new loop nest with the loop tiling transformation applied. 
+Only height elements (a friendly value for a vectorizer) are computed in the innermost loop versus the entire array previously. 
+An outer loop has been added which scans the entire array by block of size height. 
+In practice, the innermost loop is removed by the compiler which fully unrolls and vectorizes it.</p>
+
+<p>Speedup results are shown in figure 7. We added IPGO to show the potential of our approach. Specialization offers a small gain but the dominant issue is still the time spent in the critical loop nest. 
+Adding tiling offers a large gain of almost 1.8x in total by significantly reducing the memory bandwidth of the critical loop nest. 
+Despite the complexity of the original function, the same transformations could be easily applied to other cases using ASSIST.</p>
+
+<h2 id="impactofprefetcher">Impact of Prefetchers</h2>
+<p>Prefetchers setting has an important impact on performance. 
+The default setting of all prefecthers on is not necessarily the best one.
+In this section, we analyze the impact of different prefetcher configurations on three applications with three different behaviors. </p>
+
+<h3 id="impactofprefetcher_withminiqmcpack">With Mini QMCPAK</h3>
+<p>The first application used is Mini QMCPACK. 
+Specific runs have been made to test various prefetcher configurations, presented on table~\ref{tab:prefetchers_def}. 
+All prefetchers on are encoded as 0 and all prefetchers off are encoded as f.
+As reminder of the <a href="documentation.html#prefetchers">documentation</a>, there are 4 prefetchers. 
+Each of them can be turned on or off, making a total of 16 different prefetcher configurations available.
+For each prefetcher configuration a full run including profiling at the function and loop level, was performed. 
+We compared the impact on performance at three levels: full application, function and loops.</p>
+
+<center>
+<table>
+    <!-- <thead>
+        <tr>
+            <th colspan="2">The table header</th>
+        </tr>
+    </thead> -->
+    <tbody>
+        <tr>
+          <td>prefetchers config</td> <td> 0</td> <td>1</td> <td>2</td> <td>3</td> <td>4</td> <td>5</td> <td>6</td> <td>7 </td> <td> 8</td> <td>9</td> <td>a</td> <td>b</td> <td>c</td> <td>d</td> <td>e</td> <td>f  </td>
+        </tr>
+        <tr>
+          <td>L2 hardware prefetcher</td> <td> 0</td> <td>1</td> <td> 0</td> <td>1</td> <td>0</td> <td>1</td> <td>0</td> <td>1</td> <td> 0</td> <td>1</td> <td>0</td> <td>1</td> <td>0</td> <td>1</td> <td>0</td> <td>1  </td>
+        </tr>
+        <tr>
+          <td>L2 adjacent cache line prefetcher</td> <td> 0</td> <td>0</td> <td>1</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>1 </td> <td> 0</td> <td>0</td> <td>1</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>1  </td>
+        </tr>
+        <tr>
+          <td>DCU prefetcher</td> <td> 0</td> <td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>1</td> <td>1</td> <td>1  </td> <td> 0</td> <td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>1</td> <td>1</td> <td>1  </td>
+        </tr>
+        <tr>
+          <td>DCU IP prefetcher</td> <td> 0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0  </td> <td> 1</td> <td>1</td> <td>1</td> <td>1</td> <td>1</td> <td>1</td> <td>1</td> <td>1</td>
+        </tr>
+    </tbody>
+</table>
+Table 4: The different prefetcher configurations, according to <a href="https://software.intel.com/en-us/articles/disclosure-of-hw-prefetcher-control-on-some-intel-processors">Intel</a>.<br/>0=prefetcher on, 1=prefetcher off.
+</center>
+<br/>
+<br/>
+
+<p>With this experimentation we want to analyze the impact of prefetchers on the Mini QMCPACK application using different datasets.
+All executions have been done on an Haswell-E. 
+The application takes as input : "-n &lt;I&gt; -g &lt;X Y Z&gt;", where "&lt;I&gt; represents the number of iterations and "&lt;X Y Z&gt;" the size of the problem.
+The tests cases used for our experiments are :
+<code>"-n 320 -g "2 1 1" "</code>, <code>"-n 160 -g "2 2 2" "</code>, <code>"-n 40 -g "2 2 2" "</code>, <code>"-n 20 -g "4 2 2" "</code>. 
+Figure 8 represents the speedup by function for all configurations for the eleven hottest functions of the application. 
+Figure 9 represents the speedup by loop for all configurations for the eleven hottest functions of the application. 
+During the different runs, we noticed instabilities (between 2 to 10%) for all configurations, but it was interesting to see that trends were preserved. </X>
+
+<center>
+<br/>
+<img class="center-img"; src="pics/prefetcher_miniqmc_20_422_1_2.png" alt="PrefetchMiniQMC_5_422_funcs graph">
+Figure 8: Mini QMCPACK - <code>-n 20 -g "4 2 2"</code> - Speedup by function for all configurations. All speedups are compared to the configuration 0 (all prefetchers on). 
+  The graph is divided into two parts.
+<br/>
+<br/>
+</center>
+
+<center>
+<br/>
+<img class="center-img"; src="pics/prefetcher_miniqmc_20_422_loops_1_2.png" alt="PrefetchMiniQMC_5_422_funcs graph">
+Figure 9: Mini QMCPACK - <code>-n 20 -g "4 2 2"</code> - Speedup by loop for all configurations. All speedups are compared to the configuration 0 (all prefetchers on). 
+The graph is divided into two parts.
+<br/>
+<br/>
+</center>
+
+<p>Figures 8 &amp; 9 show is that each time the "L2 hardware prefetcher" is disabled, performances are degraded.
+Another observation is that other prefetchers have less impact on the application.
+Even if at loop or function level, modifying prefetcher configuration allows to obtain good speedups; the configuration with all prefetchers enabled stays the one that allow to obtain best performances on the whole application. 
+However, if our aim would not be reducing execution time but reducing energy consumption, the configuration "e" would be the best choice because we disabled three of the four prefetchers while reaching 98\% of the best combination configuration.</p>
+
+<p>Our first tests of using ASSIST to locally modifying prefetchers configuration by adding calls at function level according to the best configuration were not conclusive.
+By calling the code in Appendix~\ref{appendixB:prefetch}, which only writes the value corresponding to the desired configuration in a specific register for each CPU, the operating system added guards that add a slowdown to the execution.
+This slowdown can multiply the execution time from three to ten times.
+The same effect has been observed even on small codes and benchmarks such as Numerical Recipes (NR) and no alternatives were found.
+A last remark is that trends are similar at function and loop levels. 
+This can be explained by the fact that most of the time, functions are composed of one loop or loop nest  which represents the most part of the execution of the function. 
+Subsequently, we only present results obtained at function level.</p>
+
+<h3 id="impactofprefetcher_withavbp">With AVBP</h3>
+<p>The second application used is AVBP.
+Figure10 presents the speedup of each version of the MSR compared to all prefetchers enabled of hottest functions (functions with at least 1% coverage).
+As we can see, most of the time, having all prefetchers enabled is more often efficient at application level, except for the configuration 4 and 6 where we have a little speedup at application level. 
+With some combinations, enabling only a few prefetchers allows to obtain closed performances gain but each times that "L2 hardware prefetcher" is disabled performances dropped significantly.
+At function level we observe that we could obtain good results by modifying prefetchers configuration at function level.
+They are several function where different configuration allow to obtain better speedup that the configuration 0.
+In some cases, speedups up to x1.20.</p>
+
+<center>
+<br/>
+<img class="center-img"; src="pics/avbp_speedup_msr_1_2.png" alt="PrefetchMiniQMC_5_422_funcs graph">
+Figure 10: AVBP - SIMPLE: Speedup by function for each prefetcher configuration.
+All speedups are compared to the configuration 0 (all prefetchers on).
+The graph is divided into two parts.
+<br/>
+<br/>
+</center>
+
+
+<h3 id="impactofprefetcher_withyales2">With Yales2</h3>
+<p>The last application used is Yales2.
+Previous results on AVBP and Mini QMCPACK have showed that when executed in sequential, the best prefetchers combination for best performance is often when all prefetchers are enabled. 
+We also saw that by disabling some of prefetchers could save energy while still being competitive in term of performance.</p>
+
+<p>Figure 11 presents the speedup of each version of the MSR compared to all prefetchers enable of hottest functions (functions with at least 1% coverage).
+As for others applications, at application level, having all enable prefetchers is the most efficient combination and each time the "L2 hardware prefetcher" is disabled performances drops. 
+However, with some combinations, enabling only few prefetchers allows to obtain closed performances gain and even better at function level, where we obtain speedups up to x1.40. 
+But, even at function level, each times that "L2 hardware prefetcher" is disabled performances drop significantly.</p>
+
+<p>We now analyze the impact of the different prefetchers setting on a parallel application, Yales2.
+Results for Mini QMCPACK in parallel were not presented because they are less interesting. 
+Figure~\ref{PrefetchYales2_parallel} presents speedups of the Yales2 dataset "3D Cylinder", with different prefetcher settings, for one, two and four MPI processes. 
+All settings are compared to the configuration 0.
+As we can see on figure~\ref{PrefetchYales2_parallel}, all prefetchers on is the best configuration when the application is executed in sequential.
+However, the more the number of processes increases, the more the trend changes.
+With four processes the trend is inverted and the performance is improved.
+Parallelism adds a new perspective about the prefetcher settings.
+For applications that have to be executed with multiple processes, it is interesting to profile which configuration can bring performance.
+Nevertheless, all settings have to be profiled because it is impossible to predict performances according to one or another configuration.</p>
+
+<center>
+<br/>
+<img class="center-img"; src="pics/speedup_msr_comparision_cylinder_yales2_1_2.png" alt="yales2_prefetchers graph">
+Figure 11: Yales2- 3D_Cylinder: Speedup by function for each prefetcher combination.
+All speedups are compared to the configuration 0 (all prefetchers on).
+The graph is divided into two parts.
+<br/>
+<br/>
+</center>
+
+<center>
+<br/>
+<img class="center-img"; src="pics/prefetcher_yales2_parallel.png" alt="PrefetchYales2_parallel graph">
+Figure 12: Yales2 - 3D_Cylinder: Speedup by prefetcher combination compared to all prefetchers enabled for one, two and four processes.
+<br/>
+<br/>
+</center>
+
+<h2 id="impactofintrinsics">Impact of Intrinsic Prefetcher Function</h2>
+
+<p>Prefetchers can also be controlled more precisely by adding an <a href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/\#text=\_mm\_prefetch">intrinsic prefetcher function call</a> in the source code.
+This function is used to indicate to fetch a line of data from memory that contains the byte specified with the source operand to a location in the cache hierarchy specified by a locality hint.
+The hints indicates if its is a temporal data, a temporal data with respect to second level cache misses, or a non-temporal data.</p>
+
+<h3>With Numerical Recipes</h3>
+<p>We first try this optimization on the well-known benchmarks Numerical Recipes (NR).
+We worked on three benchmarks, <code>s319</code>, <code>s1244</code> and <code>matadd</code>.
+When the intrinsic function was inserted in the code source, the compiler modified its optimization choices and disabled all optimization performed before that the call was added.
+Vectorization and unroll were disable. 
+This is one of the main issue when optimizations are done at source level, the compiler can modify its optimization choices and it harms to our predictions.
+We forced the vectorization using the directive "simd" and unrolled the loop at source level but the compiler rewound the loop and still not vectorized.
+To verify if our optimization worth it anyway, we apply the optimization at binary level to keep previous compiler optimization in addition of the prefetch.
+The prefetch function has been only add for store data.
+Table 5 shows that by prefetching store data with different distances allows an important improvement.
+From 12% speedup for s1244 to 45% for s319.</p>
+
+<center>
+<table>
+    <!-- <thead>
+        <tr>
+            <th colspan="2">The table header</th>
+        </tr>
+    </thead> -->
+    <tbody>
+        <tr>
+          <td>NR</td> <td>ORIG</td> <td>prefetch</td> <td>prefetch 64</td> <td>prefetch 128</td> <td>prefetch 256</td> <td>prefetch 512</td> <td>prefetch 1024</td>
+        </tr>
+        <tr>
+          <td>s319</td> <td>172936</td> <td>112116</td> <td>112248</td> <td>112268</td> <td>112172</td> <td>117300</td> <td>111832</td>
+        </tr>
+        <tr>
+          <td>s1244</td> <td>131296</td> <td>103236</td> <td>102684</td> <td>105352</td> <td>104128</td> <td>106724</td> <td>103644</td>
+        </tr>
+        <tr>
+          <td>matadd</td> <td>341436</td> <td>278708</td> <td>278388</td> <td>281464</td> <td>278040</td> <td>274956</td> <td>274228</td>
+        </tr>
+    </tbody>
+</table>
+Table 5: NR - Number of cycle for the target loop. Prefetch 64, 128, 256, 512 and 1024 indicates the distance of the data to prefetch.
+</center>
+<br/>
+<br/>
+
+<h3>With QMCPACK</h3>
+<p>Same observations have been done with QMCPACK, the compiler disable all previous optimizations when intrinsic prefetcher function is added at source level.
+As for NR, the function has been added at binary level.
+Table 6 shows results on different loops of the application.
+We can see that the comportment may differs from a loop to another one.
+Fetching a data allows to obtain performance gains (loop 19042) as it can degrade (loop 19064).
+Sometimes it can have both depending of the distance prefetched (loop 30871).</p>
+
+<center>
+<table>
+    <!-- <thead>
+        <tr>
+            <th colspan="2">The table header</th>
+        </tr>
+    </thead> -->
+    <tbody>
+        <tr>
+          <td>Loop id</td> <td>ORIG</td> <td>prefetch</td> <td>prefetch 64</td> <td>prefetch 128</td> <td>prefetch 256</td> <td>prefetch 512</td> <td>prefetch 1024</td>
+        </tr>
+        <tr>
+          <td>30954</td> <td>5212</td> <td>4892</td> <td>5032</td> <td>5012</td> <td>5008</td> <td>5040</td> <td>5024</td>
+        </tr>
+        <tr>
+          <td>30944</td> <td>1840</td> <td>1220</td> <td>1220</td> <td>1220</td> <td>1224</td> <td>1220</td> <td>1220</td>
+        </tr>
+        <tr>
+          <td>30871</td> <td>490</td> <td>500</td> <td>456</td> <td>484</td> <td>500</td> <td>492</td> <td>488</td>
+        </tr>
+        <tr>
+          <td>19064</td> <td>5672</td> <td>5756</td> <td>6188</td> <td>5896</td> <td>6816</td> <td>6032</td> <td>6348</td>
+        </tr>
+        <tr>
+          <td>19042</td> <td>2726</td> <td>1640</td> <td>1520</td> <td>1592</td> <td>1648</td> <td>1672</td> <td>1628</td>
+        </tr>
+    </tbody>
+</table>
+Table 6: QMCPACK - Number of cycle for the target loop. Prefetch 64, 128, 256, 512 and 1024 indicates the distance of the data to prefetch.
+</center>
+<br/>
+<br/>
+
+<p>For this transformation, the compiler remains our main limitation by refusing to apply optimizations as soon as the loop contains a function call, even if it is an intrinsic function. 
+The second limitation is how to detect when trigger this transformation. 
+Prefetching data improves performance when the cache line is not in L1 and have to be loaded for not waiting when we need it.
+DECAN can inform us for these cases with the "REF" variant. 
+This variant adds a load before stores data and compare the number of cycles for both versions. 
+A last issue is for the distance to choose. 
+Currently, we do not have metric to decide which distance choose, we have to test them all to know which one is the more efficient.</p>
+
+<h2> Impact of other common transformations</h2>
+
+<h3>With QMCPACK</h3>
+<p>QMCPACK is a good example of when compiler failed to optimize and what is remained to do in term of transformations with ASSIST.
+With this example, we observe that the compiler tends to refuse to vectorize some loops. 
+It prefers optimizes according to a pattern that we must recognize without using vector instructions.
+Due to the Rose lack of C++ management which considers template statements as string nodes we could not applied our optimizations with ASSIST. 
+However, we tried to resolve manually the issues which where pointed to by MAQAO.</p>
+
+<center>
+<table>
+    <!-- <thead>
+        <tr>
+            <th colspan="2">The table header</th>
+        </tr>
+    </thead> -->
+    <tbody>
+        <tr>
+          <td>Loop id</td> <td>ORIG</td> <td>FU</td> <td>FU_DIV</td> <td>FU_DIV_SIGNBIT</td> <td>FU_DIV_SIGNBIT_SIMD</td> 
+        </tr>
+        <tr>
+          <td>Total</td> <td>143.18</td> <td>138.74</td> <td>127.22</td> <td>129.8</td> <td>127.76</td>
+        </tr>
+        <tr>
+          <td>ParticleBConds3DSoa.h</td> <td>10.52</td> <td>7.5</td> <td>7.7</td> <td>8.22</td> <td>7.94</td>
+        </tr>
+        <tr>
+          <td>bspline_create.c</td> <td>51.24</td> <td>50.86</td> <td>40.92</td> <td>40.96</td> <td>40.1</td>
+        </tr>
+        <tr>
+          <td>BsplineFunctor.h</td> <td>1.4</td> <td>1.32</td> <td>1.46</td> <td>2.5</td> <td>1.4</td>
+        </tr>
+    </tbody>
+</table>
+Table 7: Time in second of multiple versions of QMCPACK. Files have been used as identifier because they contains multiple loops that have been optimize at the same time.
+    Orig: Original version; FU: Full unroll version; FU_DIV: FU + Divison replaced by multiplications; FU_DIV_SIGNBIT: FU_DIV = use signbit function to replace an if statement; FU_DIV_SIGNBIT_SIMD: FU_DIV_SIGNBIT + use of the directive "simd" above signbit loop.
+</center>
+<br/>
+<br/>
+
+At first, we worked on two categories:
+<ul>
+  <li>1) All of the loops with bad vectorization ratio.</li>
+  <li>2) The loops with high flow complexity.</li>
+</ul>
+<p>Table 7 present results obtained with different optimizations.
+All optimizations have been applied iteratively.
+The first loop we work on is an interesting case because it was a loop where inside there was an innermost loop with 7 iterations. 
+This innermost loop was flagged with a directive to perform full unroll. 
+In fact the compiler generated a very complex code with a lot of branching (more 128 paths, making static analysis difficult). 
+We simply hand unrolled the loop which gave an overall decent performance gain around 2.5% execution of the whole application. 
+This optimized version is called "FU".
+The second loop is in "bspline_create.c". 
+It has three divisions using the same denominator. 
+These divisions have been replaced by, one division of the inverse and three multiplications of the results of the division.
+This version is called <code>FU_DIV</code>.
+For the <code>FU_DIV_SIGNBIT</code> verson, we use the "signbit" function to replace an if statement as follow. 
+The <a href="https://en.cppreference.com/w/cpp/numeric/math/signbit">"signbit"</a> function determines if the given floating point number in argument is negative and return 1 if it is else 0.</p>
+
+<pre>
+ #pragma vector always 
+ for ( int jat = 0; jat < iLimit; jat++ ) {
+   real_type r = distArray[jat];
+   if ( r < cutoff_radius )
+      distArrayCompressed[iCount++] = distArray[jat];
+ }
+</pre>
+<center>
+(a) Before "signbit" transformation
+</center>
+<br/>
+<pre>
+  #pragma simd
+  for (int jat = 0; jat < iLimit; jat++)
+  {
+    real_type r = distArray[jat];
+    int signbit = std::signbit(r - cutoff_radius);
+    distArrayCompressed[iCount] = r * signbit;
+    iCount+=signbit;
+  }
+</pre>
+<center> 
+(b) After "signbit" transformation
+</center>
+<br/>
+
+By applying this transformation, there are most instructions executed at each iteration but they can be vectorized.
+Therefore, the more the number of iterations, the more the code will be efficient.
+However, even if the code can be vectorized with this new implementation; the Intel compiler only vectorize the loop at 20%, even with the <code>#pragma vector always</code>. 
+We had to add the <code>#pragma simd</code> directive instead to be more aggressive and force him to vectorize this loop.
+The loop where the "signbit" transformation was applied has not enough iterations in this dataset to be efficient, but when vectorized we do not degraded performances.
+This last transformation is very complex to automate it, but it is interesting to present this solution to improve vectorization when compiler cannot perform it.
+
+<h1 id="conclusion">Conclusion</h1>
+We have shown the efficiency of our approach: how and when already well-known transformations allow to gain on real-world HPC applications by using either static and dynamic feedback data, or user's guidance. 
+No new techniques are developed, but new combination of transformations have shown worthwhile and it remains non-exploited promising analyzes and profiles.
+Moreover, our approach allows to remain portable across compilers and architectures. 
+<br/>
+<br/>
+
+  </body>
+</html>
