@@ -34,10 +34,10 @@
      <section class="main-content">
       <hr />
 <p><a href="index.html">Home</a> - 
-<a href="dissemination.html">Dissemination</a> - 
+<a href="dissemination.html">Publications</a> - 
 <a href="gettingstarted.html">Getting Started</a> -
 <!--<a href="documentation.html">Documentation</a> - -->
-<a href="tutorials.html">Tutorials</a> -
+<a href="useexample.html">Tutorials</a> -
 <a href="https://maqaoteam.github.io/MAQAO/">MAQAO</a> -
 <a href="https://maqaoteam.github.io/MAQAO/team.html">MAQAO Team</a> </p>
 
@@ -56,10 +56,11 @@
 <a href="#transformations">6. Transformations</a> <br />
 </p>
 -->
+<h1 id="tutorials">Tutorials</h1>
 
-<h1 id="exampleABINIT">Example on ABINIT -- Ti256 dataset</h1>
-
-Here we present how to transform an industrial open source code: ABINIT; which have been chosen, with the test case “Ti-256” due to results we obtained with very little efforts. 
+<h2 id="exampleABINIT">Example on ABINIT -- Ti256 dataset</h2>
+<h3>Protocole</h3>
+Here we present how to transform an industrial open source code: ABINIT; which have been chosen with the test case “Ti-256” due to results we obtained with very little efforts. 
 All sources codes and makefile can be found <a href="codes/abinit/">here</a>.
 ABINIT is a software suite to calculate the optical, mechanical, vibrational, and other observable properties of materials.
 Thanks to some tools we detected that all the compute part is perform in the file opernlb_ylm.F90 and some variables are always used with the same value. 
@@ -73,8 +74,21 @@ This command has the effect of creating RMOD files of all Fortran modules in the
 The dot can be replace by a path to all modules. RMOD files will be create in he same folder as the corresponding module. 
 Rose manage badly defines, if you have some, you have to way to handle them; first, you can preprocess the file with the option “-cpp” of most of compiler, or replace directly the define by its value. 
 For ou example we had to correct this Rose's shortcomings by modifying one RMOD file (“m_xmpi.rmod”) by replacing the macro: "ABI_PROTECTED” with its equivalent: “, protected” and the file opernlb_ylm.F90 by preprocessing it.
-The second step is adding directives to specialize the function and tiling an heavy loop. 
-Then the following command will apply transformations according to directives in the opernlb_ylm file, we indicate where are folder and subfolders containing RMOD files with the option “-I”.
+
+By performing a full profiling of the code, three input parameters were found to be of importance.
+First, the function can be called with two different types of input data, either real-valued data or complex-valued data. 
+A given test case will almost exclusively use one or the other. 
+As those data are expressed as an array with one or two elements in a part of the code, specialization of this value simplifies address computations and vector accesses by making the stride a compile-time constant rather than a dynamic value.
+Second, multiple variants of the algorithm are implemented in the function. 
+Which exact variant is used, depends on two integer parameters. 
+Again, a given test case is usually heavily biased towards a small subset of possible cases. 
+The specialization of one case allows to remove multiple conditionals. 
+For a given case, different branches appears in the loop nests. 
+This removal of conditionals exposes the true dynamic chaining of the loop nest directly to the compiler with no intervening control-flow break. 
+
+Therefore, the second step is to add directives to specialize the function and tiling an heavy loop where a large array is updated in its entirety; a bad pattern for cache usage.
+The following command will apply transformations according to directives in the opernlb_ylm file, we indicate where are folder and subfolders containing RMOD files with the option “-I”.
+A value profiling allowed us to know which values were used for the three parameters.
 
 <pre>
 	!DIR$ MAQAO SPECIALIZE(choice=1, paw_opt=3, cplex=2)
@@ -90,12 +104,52 @@ Then the following command will apply transformations according to directives in
 <br/>
 <code>$maqao s2s –src=opernlb_ylm.F90 –option=”apply_directives” –I=/home/test/abinit/src/ </code>
 <br/>
-Which will create a maqao_opernlb_ylm.F90 with three versions of the function “opernlb_ylm” where variables “choice” is set to 1, “cplex” is set to 2 and among these versions, one has “paw_opt” set to 3 and the others take into account that it is strictly less than or greater than 3; and in each version where choice is set to 1, the loop with the MAQAO directive is tiled by 8. 
+Which will create a maqao_opernlb_ylm.F90 with three specialized function variants “opernlb_ylm” where variables “choice” is set to 1, “cplex” is set to 2 and among these versions, one has “paw_opt” set to 3 and the others take into account that it is strictly less than or greater than 3; and in each version where choice is set to 1, the critical loop nest is subsequently tiled, but only in the specialized versions.
+In practice, the innermost loop is removed by the compiler which fully unrolls and vectorizes it.
 If we replace the file opernlb_ylm.F90 by this new one generate by ASSIST and re-launch the makefile it will compile and be optimize for the dataset “Ti-256”.
 For more information and results, look at the paper of ASSIST: “ASSIST: a feedback-directed optimization source to source transformation tool for HPC applications”.
 
+<h3>Results</h3>
+Tests have been performed using the Intel compiler version 17 on an Intel(R) Xeon(R) CPU E5-2670 0 @ 2.60GHz
+<pre>
+## Load the intel compiler version 17
+module load intel/17.0.4
+
+#COMPILE Wallclock
+icc -c wallclock.c -o wallclock_icc17.o
+
+#COMPILE opernlb
+## ORIG
+ifort -g -diag-disable 5268 -stand f95 -O3 -march=native -mtune=native opernlb_ylm_pp.f90 test_choice1_cmplex2_paw3_nofunction.F90 wallclock_icc17.o -o test_orig_icc17
+
+## ASSIST (spe + blocking)
+ifort -g -diag-disable 5268 -stand f95 -O3 -march=native -mtune=native maqao_opernlb_ylm_pp.f90 test_choice1_cmplex2_paw3_nofunction.F90 wallclock_icc17.o -o test_maqao_icc17
+
+## Execution time comparison
+./test_orig_icc17
+ time (sec):    <text-bold>2.39738392829895</text-bold>
+
+./test_pgo_icc17
+ time (sec):    <text-bold>2.40033602714539</text-bold>
+
+./test_maqao_icc17
+ time (sec):    <text-bold>1.57686400413513</text-bold>
+</pre>
+<br/>
+
+Speedup results are shown in figure below. We added IPGO to show the potential of our approach. 
+Specialization offers a small gain but the dominant issue is still the time spent in the critical loop nest. 
+Adding tiling offers a large gain of almost 1.8x in total by significantly reducing the memory bandwidth of the critical loop nest. 
+
+<br/>
+<img class="center-img"; src="pics/abinit_speedup_gnuplot.png" alt="abinit speedup graph">
+
 <br/>
 <br/>
+      <footer class="site-footer">
+          <span class="site-footer-owner"><a href="https://github.com/MaqaoTeam/MAQAO">MAQAO</a> is maintained by <a href="https://github.com/MaqaoTeam">MaqaoTeam</a>.</span>
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a>.</span>
+      </footer>
 
   </body>
 </html>
