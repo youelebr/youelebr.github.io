@@ -684,3 +684,9 @@ width:50%;
 overflow:hidden;
 text-align: left;
 } 
+.center-img{
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  /*!width: 50%;*/
+}
